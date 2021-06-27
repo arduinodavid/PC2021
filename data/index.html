@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html>
+	
+	<head>
+		<title>My Lunar Van</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+			<link rel="icon" href="data:,">
+				<link rel="stylesheet" type="text/css" href="style.css">
+					</head>
+	<body>
+		<h1><a href="/">Lunar Pump Control</a></h1>
+		<p>
+		<h3>Pump A:
+			<span id="stateA"><strong>%STATEA%</strong></span>
+<!--			if (%STATEA% == "On") {-->
+<!--			<button class="button"><enabled>Set</button></a>-->
+<!--			} else {-->
+<!--			<button class="button"><disabled>Set</button></a>-->
+<!--			}-->
+			<a href="/onPumpA">
+				<button class="button">ON</button></a>
+			<a href="/offPumpA">
+				<button class="button button2">OFF</button></a>
+			<a href="/setA">
+				<button class="button button-set">Set</button></a>
+		</h3>
+		</p>
+		<p>
+		<span class="sensor-labels">Pump A</span>
+		<span id="ampsA" class="sensor-labels">%ampsA%</span>
+		</p>
+<!--		<p>&nbsp;</p>  <!--  this is like a carridge return -->
+
+<!--APH Added Swap button		-->
+		<p>
+		<h3> Swap Pumps (Active:
+			<span id="activePump"><strong>%activePump% )</strong></span>
+			<a href="/swapPumps">
+				<button class="button">&#8593&#8595</button></a></h3>
+		</p>
+		<!--APH Added Swap button		-->
+
+		<p>
+		<h3>Pump B:
+			<span id="stateB"><strong>%STATEB%</strong></span>
+			<a href="/onPumpB">
+				<button class="button">ON</button></a>
+			<a href="/offPumpB">
+				<button class="button button2">OFF</button></a>
+			<a href="/setB">
+				<button class="button button-set">Set</button></a></h3>
+		</p>
+		<p>
+		<span class="sensor-labels">Pump B</span>
+		<span id="ampsB" class="sensor-labels">%ampsB%</span>
+		</p>
+		
+		<h2><span>Controller Clock - </span><span id="time" class="sensor-labels">%time%</span></h2>
+
+		<p>
+			<table style = "margin-left:auto;margin-right:auto;">
+				<tr>
+					<td style = "text-align:right">
+						<form action = "/get">
+							Time Now:</td>
+					<td style = "width:30"><input type="time" name="timenow" size="4"></td>
+					<!--<button input type="submit" value="Set " <a class="button button-set" ></button></a>-->
+					<td style = "width:20"><button class="button button-set">Set</button></a></td>
+					</form>
+				</tr>
+					
+				<tr>
+					<td style = "text-align:right">
+						<form action = "/get">
+							System Wakes at (%systemOnTime%):</td>
+					<td style = "width:20"><input type="time" name="ontime" value="%systemOnTime%"></td>
+					<!--<button input type="submit" value="Set " <a class="button button-set" ></button></a>-->
+					<td style = "width:20"><button class="button button-set">Set</button></a></td>
+					</form>
+				</tr>
+				
+				<tr>
+					<td style = "text-align:right">
+						<form action = "/get">
+							System Sleeps at (%systemOffTime%): </td>
+					<td style = "width:20"><input type="time" name="offtime" value="%systemOffTime%"></td>
+					<!--<button input type="submit" value="Set " <a class="button button-set" ></button></a>-->
+					<td style = "width:20"><button class="button button-set">Set</button></a></td>
+					</form>
+				</tr>
+			</table>			
+		</p>
+		
+	</body>
+	
+	<script>
+		
+		setInterval(function ( ) {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("ampsA").innerHTML = this.responseText;
+				}
+			};
+			xhttp.open("GET", "/ampsA", true);
+			xhttp.send();
+		}, 950);
+	
+	setInterval(function () {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function () {
+			if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("stateA").innerHTML = this.responseText;
+			}
+<!--			APH Added to stop Set button if pump not running-->
+<!--			if (%STATEA% == "On") {-->
+<!--			<button class="button"><enabled>Set</button></a>-->
+<!--			<button class="button"><visibility:visible>ON</button></a>-->
+<!--			} else {-->
+<!--			<button class="button" disabled>Set</button></a>-->
+<!--				<button class="button"><visibility:hidden>ON</button></a>-->
+<!--			}-->
+<!--			APH Added to stop Set button if pump not running-->
+		};
+		xhttp.open("GET", "/stateA", true);
+		xhttp.send();
+	}, 1000);
+	
+	setInterval(function ( ) {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("ampsB").innerHTML = this.responseText;
+			}
+		};
+		xhttp.open("GET", "/ampsB", true);
+		xhttp.send();
+	}, 1100);
+	
+	setInterval(function () {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function () {
+			if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("stateB").innerHTML = this.responseText;
+			}
+		};
+		xhttp.open("GET", "/stateB", true);
+		xhttp.send();
+	}, 1150);
+	
+	<!--	APH added to update the Swap button active pupm-->
+	setInterval(function ( ) {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("activePump").innerHTML = this.responseText;
+			}
+		};
+		xhttp.open("GET", "/activePump", true);
+		xhttp.send();
+	}, 1200);
+	<!--	APH added-->
+
+	setInterval(function ( ) {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("time").innerHTML = this.responseText;
+			}
+		};
+		xhttp.open("GET", "/time", true);
+		xhttp.send();
+	}, 10000 ) ;
+
+	</script>
+</html>
