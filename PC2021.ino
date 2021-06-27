@@ -59,7 +59,7 @@
   156 - APH Added check if set time value zero, if so dont set time.
   157 - APH Renamed project PC2021 & Added option for both dev & 2021 boards.
 */
-int version = 157;
+int version = 157999;
 
 //#define david // APH 154 added this feature from Energy Miser
 //#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
