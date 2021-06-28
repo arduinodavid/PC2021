@@ -1,6 +1,6 @@
 /*
    Name:       PC2021.ino
-   Created:	24/11/2019 14:58:05
+   Created: 24/11/2019 14:58:05
    Author:     DAVID-HP\David
 */
 #define Ver 41 // fir the digole!!!!
@@ -59,10 +59,10 @@
   156 - APH Added check if set time value zero, if so dont set time.
   157 - APH Renamed project PC2021 & Added option for both dev & 2021 boards.
 */
-int version = 157999;
+int version = 157;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -123,16 +123,16 @@ RTC_DS1307 rtc;
 #define pinPressureSwitch 39 // pin 10 was 39/2 ->IO5 on PCB
 #define pinPumpCurrent 36 // pin 1 -> IO35 on PCB
 #else
+#define pinNewBuzzer 23
+#define pinScreenButton 25
+#define pinSet 32
 #define pinPumpA 18
 #define pinPumpB 19
-#define pinSet 32
 #define pinB 17
 #define pinA 16
-#define pinScreenButton 25
+#define pinPressureSwitch 5
 #define pinPumpCurrent 35
 #define pinAmplifier 26 // was pinBuzzer
-#define pinNewBuzzer 23
-#define pinPressureSwitch 5
 #endif
 
 // #define pinPSLED 25 // pin 10 APH 137 removed
@@ -318,7 +318,7 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
 
   pinMode(ledPin, OUTPUT);
-  pinMode(pinPSLED, OUTPUT);
+  // APH 157  pinMode(pinPSLED, OUTPUT);
 
   pinMode(pinPumpA, OUTPUT);
   pinMode(pinPumpB, OUTPUT);
@@ -355,8 +355,8 @@ void setup() {
   //File dfile = root.openNextFile();
 
   //while (dfile) {
-  //	Serial.println(dfile.name());
-  //	dfile = root.openNextFile();
+  //  Serial.println(dfile.name());
+  //  dfile = root.openNextFile();
   //}
 
 #ifdef useRTC
@@ -782,10 +782,15 @@ void setup() {
   server.begin();
 
   ledcSetup(0, 1000, 10);
+
+// APH 157 added as only used on dev board
+#ifdef DEV_BOARD
   ledcAttachPin(pinBuzzer, 0);
+#endif
+// APH 157 added as only used on dev board
 
   if (btnPressureSwitch.isPressed()) {
-    digitalWrite(pinPSLED, HIGH);
+    // APH 157  digitalWrite(pinPSLED, HIGH);
     tapOpen = true;
     Serial.println("Tap is OPEN");
     // APH 155 changed
@@ -847,7 +852,7 @@ void loop() {
 
   if (btnPressureSwitch.wasPressed()) {
     Serial.println("Tap open");
-    digitalWrite(pinPSLED, HIGH);
+    // APH 157 digitalWrite(pinPSLED, HIGH);
 
     if (!pumpARunning && !pumpBRunning) {
 
@@ -883,7 +888,7 @@ void loop() {
 
   if (btnPressureSwitch.wasReleased() && !pumpIsStarting) {
     Serial.println("Tap close detected");
-    digitalWrite(pinPSLED, LOW);
+    // APH 157   digitalWrite(pinPSLED, LOW);
 
     if (!manualControl && !night) {
       pressurising = true;
@@ -923,7 +928,7 @@ void loop() {
 
     if (btnPressureSwitch.isReleased()) { // tur off at end of start if ps
       Serial.println("Tap closed at end of start, re-pressuring");
-      digitalWrite(pinPSLED, LOW);
+      // APH 157  digitalWrite(pinPSLED, LOW);
 
       if (!manualControl) {
         pressurising = true;
@@ -1395,7 +1400,7 @@ void getEEData() {
   if (nightStartMM > 59) nightStartMM = 30;
 
   nightEndHH = (int)EEPROM.read(EE_NIGHT_END_HH);
-  //	if ((nightEndHH > 10) || (nightEndHH == 0)) nightEndHH = 6;
+  //  if ((nightEndHH > 10) || (nightEndHH == 0)) nightEndHH = 6;
   //  if (nightEndHH > 10) nightEndHH = 6; // APH
 
   nightEndMM = (int)EEPROM.read(EE_NIGHT_END_MM);
@@ -1561,7 +1566,7 @@ void showPumpScreen() { // This is when a Pump is running
   if (pumpARunning) gDisp.drawBitmap(0, 0, 125, 64, FRONT); // 147
   else if (pumpBRunning) gDisp.drawBitmap(0, 0, 125, 64, REAR);
 
-  //	gDisp.drawBitmap(2, 32, 125, 64, RUNNING);
+  //  gDisp.drawBitmap(2, 32, 125, 64, RUNNING);
   gDisp.drawBitmap(0, 64, 125, 64, RUNNING);
 
   gDisp.setFont(202);
