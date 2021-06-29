@@ -59,11 +59,12 @@
   156 - APH Added check if set time value zero, if so dont set time.
   157 - APH Renamed project PC2021 & Added option for both dev & 2021 boards.
   158 - tweaks for PCB
+  159 - APH Changes word 'testing' to make searching easier so #define now Testing not testing
 */
-int version = 158;
+int version = 159;
 
 //#define david // APH 154 added this feature from Energy Miser
-#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -125,7 +126,7 @@ RTC_DS1307 rtc;
 #define pinPumpCurrent 36 // pin 1 -> IO35 on PCB
 #else
 #define pinNewBuzzer 23
-#ifdef testing
+#ifdef Testing
 #define pinScreenButton 32
 #define pinSet 0
 #else
@@ -373,8 +374,8 @@ void setup() {
   delay(100);
   //Serial.println(); Serial.print(APssid); Serial.println(" access point started");
 
-  // APH added for Testing Only 154
-#ifdef testing
+  // APH added for testing Only 154
+#ifdef Testing
   //WiFi.disconnect(false); // WiFi ON at boot-up
   //WiFi.enableAP(true);
 #else
@@ -799,7 +800,7 @@ void setup() {
 
   Serial.print("started v"); Serial.println(version);
 
-#ifdef testing // APH added 157
+#ifdef Testing // APH added 157
   beep(1, 1, 9, 1000);
 #else
   playTune(); // David likes this and used normally
