@@ -63,7 +63,7 @@
 int version = 158;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -125,8 +125,13 @@ RTC_DS1307 rtc;
 #define pinPumpCurrent 36 // pin 1 -> IO35 on PCB
 #else
 #define pinNewBuzzer 23
+#ifdef testing
+#define pinScreenButton 32
+#define pinSet 0
+#else
 #define pinScreenButton 25
 #define pinSet 32
+#endif
 #define pinPumpA 18
 #define pinPumpB 19
 #define pinB 17
@@ -370,8 +375,8 @@ void setup() {
 
   // APH added for Testing Only 154
 #ifdef testing
-  WiFi.disconnect(false); // WiFi ON at boot-up
-  WiFi.enableAP(true);
+  //WiFi.disconnect(false); // WiFi ON at boot-up
+  //WiFi.enableAP(true);
 #else
   WiFi.disconnect(true); // 152 WiFi OFF at boot-up
   WiFi.enableAP(false);
