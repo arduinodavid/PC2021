@@ -58,11 +58,12 @@
   155 - APH Added check when booting up & try last pump. Added commit for Pump EE. Change display when empty.
   156 - APH Added check if set time value zero, if so dont set time.
   157 - APH Renamed project PC2021 & Added option for both dev & 2021 boards.
+  158 - tweaks for PCB
 */
-int version = 157;
+int version = 158;
 
 //#define david // APH 154 added this feature from Energy Miser
-#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+//#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -255,32 +256,6 @@ int noteDurations[] = {
   4, 8, 8, 4, 4, 4, 4, 4
 };
 
-//// Array with the notes in the melody (see pitches.h for reference)
-//int melody[] = {NOTE_A4, NOTE_A4, NOTE_A4, NOTE_F4, NOTE_C5, NOTE_A4, NOTE_F4, NOTE_C5, NOTE_A4, NOTE_E5, NOTE_E5, NOTE_E5, NOTE_F5, NOTE_C5, NOTE_A4, NOTE_F4, NOTE_C5, NOTE_A4};
-//
-//// Array with the note durations: a quarter note has a duration of 4, half note 2 etc.
-//int noteDurations[] = {4, 4, 4, 5, 16, 4, 5, 16, 2, 4, 4, 4, 5, 16, 4, 5, 16, 2};
-
-
-//// the melody sequence:
-//int melody[] = {1, 3, 5, 1,
-//                1, 3, 5, 1,
-//                5, 6, 8, 5, 6, 8,
-//                8, 10, 8, 6, 5, 1,
-//                8, 10, 8, 6, 5, 1,
-//                1, -4, 1,
-//                1, -4, 1
-//               };
-//// the rhythm sequence:
-//int rhythm[] = {4, 4, 4, 4,
-//                4, 4, 4, 4,
-//                4, 4, 2,
-//                4, 4, 2,
-//                8, 8, 8, 8, 4, 4,
-//                8, 8, 8, 8, 4, 4,
-//                4, 4, 2,
-//                4, 4, 2
-//               };
 
 // mode
 byte sysMode = 0;
@@ -401,16 +376,7 @@ void setup() {
   WiFi.disconnect(true); // 152 WiFi OFF at boot-up
   WiFi.enableAP(false);
 #endif
-  //  WiFi.disconnect(true); // 152 WiFi OFF at boot-up
-  //  WiFi.enableAP(false);
 
-  //  WiFi.disconnect(false); // WiFi ON at boot-up
-  //  WiFi.enableAP(true);
-  // APH Testing Only
-
-  //Serial.println();
-  //Serial.print("IP address: ");
-  //Serial.println(WiFi.softAPIP());
 
 #endif
 
@@ -786,6 +752,8 @@ void setup() {
 // APH 157 added as only used on dev board
 #ifdef DEV_BOARD
   ledcAttachPin(pinBuzzer, 0);
+#else
+  ledcAttachPin(pinAmplifier, 0);
 #endif
 // APH 157 added as only used on dev board
 
