@@ -1,6 +1,6 @@
 /*
    Name:       PC2021.ino
-   Created:	24/11/2019 14:58:05
+   Created: 24/11/2019 14:58:05
    Author:     DAVID-HP\David
 */
 #define Ver 41 // fir the digole!!!!
@@ -58,11 +58,12 @@
   155 - APH Added check when booting up & try last pump. Added commit for Pump EE. Change display when empty.
   156 - APH Added check if set time value zero, if so dont set time.
   157 - APH Renamed project PC2021 & Added option for both dev & 2021 boards.
+  158 - tweaks for PCB
 */
-int version = 157999;
+int version = 158;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -123,16 +124,21 @@ RTC_DS1307 rtc;
 #define pinPressureSwitch 39 // pin 10 was 39/2 ->IO5 on PCB
 #define pinPumpCurrent 36 // pin 1 -> IO35 on PCB
 #else
+#define pinNewBuzzer 23
+#ifdef testing
+#define pinScreenButton 32
+#define pinSet 0
+#else
+#define pinScreenButton 25
+#define pinSet 32
+#endif
 #define pinPumpA 18
 #define pinPumpB 19
-#define pinSet 32
 #define pinB 17
 #define pinA 16
-#define pinScreenButton 25
+#define pinPressureSwitch 5
 #define pinPumpCurrent 35
 #define pinAmplifier 26 // was pinBuzzer
-#define pinNewBuzzer 23
-#define pinPressureSwitch 5
 #endif
 
 // #define pinPSLED 25 // pin 10 APH 137 removed
@@ -255,32 +261,6 @@ int noteDurations[] = {
   4, 8, 8, 4, 4, 4, 4, 4
 };
 
-//// Array with the notes in the melody (see pitches.h for reference)
-//int melody[] = {NOTE_A4, NOTE_A4, NOTE_A4, NOTE_F4, NOTE_C5, NOTE_A4, NOTE_F4, NOTE_C5, NOTE_A4, NOTE_E5, NOTE_E5, NOTE_E5, NOTE_F5, NOTE_C5, NOTE_A4, NOTE_F4, NOTE_C5, NOTE_A4};
-//
-//// Array with the note durations: a quarter note has a duration of 4, half note 2 etc.
-//int noteDurations[] = {4, 4, 4, 5, 16, 4, 5, 16, 2, 4, 4, 4, 5, 16, 4, 5, 16, 2};
-
-
-//// the melody sequence:
-//int melody[] = {1, 3, 5, 1,
-//                1, 3, 5, 1,
-//                5, 6, 8, 5, 6, 8,
-//                8, 10, 8, 6, 5, 1,
-//                8, 10, 8, 6, 5, 1,
-//                1, -4, 1,
-//                1, -4, 1
-//               };
-//// the rhythm sequence:
-//int rhythm[] = {4, 4, 4, 4,
-//                4, 4, 4, 4,
-//                4, 4, 2,
-//                4, 4, 2,
-//                8, 8, 8, 8, 4, 4,
-//                8, 8, 8, 8, 4, 4,
-//                4, 4, 2,
-//                4, 4, 2
-//               };
 
 // mode
 byte sysMode = 0;
@@ -318,7 +298,7 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
 
   pinMode(ledPin, OUTPUT);
-  pinMode(pinPSLED, OUTPUT);
+  // APH 157  pinMode(pinPSLED, OUTPUT);
 
   pinMode(pinPumpA, OUTPUT);
   pinMode(pinPumpB, OUTPUT);
@@ -355,8 +335,8 @@ void setup() {
   //File dfile = root.openNextFile();
 
   //while (dfile) {
-  //	Serial.println(dfile.name());
-  //	dfile = root.openNextFile();
+  //  Serial.println(dfile.name());
+  //  dfile = root.openNextFile();
   //}
 
 #ifdef useRTC
@@ -395,22 +375,13 @@ void setup() {
 
   // APH added for Testing Only 154
 #ifdef testing
-  WiFi.disconnect(false); // WiFi ON at boot-up
-  WiFi.enableAP(true);
+  //WiFi.disconnect(false); // WiFi ON at boot-up
+  //WiFi.enableAP(true);
 #else
   WiFi.disconnect(true); // 152 WiFi OFF at boot-up
   WiFi.enableAP(false);
 #endif
-  //  WiFi.disconnect(true); // 152 WiFi OFF at boot-up
-  //  WiFi.enableAP(false);
 
-  //  WiFi.disconnect(false); // WiFi ON at boot-up
-  //  WiFi.enableAP(true);
-  // APH Testing Only
-
-  //Serial.println();
-  //Serial.print("IP address: ");
-  //Serial.println(WiFi.softAPIP());
 
 #endif
 
@@ -782,10 +753,17 @@ void setup() {
   server.begin();
 
   ledcSetup(0, 1000, 10);
+
+// APH 157 added as only used on dev board
+#ifdef DEV_BOARD
   ledcAttachPin(pinBuzzer, 0);
+#else
+  ledcAttachPin(pinAmplifier, 0);
+#endif
+// APH 157 added as only used on dev board
 
   if (btnPressureSwitch.isPressed()) {
-    digitalWrite(pinPSLED, HIGH);
+    // APH 157  digitalWrite(pinPSLED, HIGH);
     tapOpen = true;
     Serial.println("Tap is OPEN");
     // APH 155 changed
@@ -847,7 +825,7 @@ void loop() {
 
   if (btnPressureSwitch.wasPressed()) {
     Serial.println("Tap open");
-    digitalWrite(pinPSLED, HIGH);
+    // APH 157 digitalWrite(pinPSLED, HIGH);
 
     if (!pumpARunning && !pumpBRunning) {
 
@@ -883,7 +861,7 @@ void loop() {
 
   if (btnPressureSwitch.wasReleased() && !pumpIsStarting) {
     Serial.println("Tap close detected");
-    digitalWrite(pinPSLED, LOW);
+    // APH 157   digitalWrite(pinPSLED, LOW);
 
     if (!manualControl && !night) {
       pressurising = true;
@@ -923,7 +901,7 @@ void loop() {
 
     if (btnPressureSwitch.isReleased()) { // tur off at end of start if ps
       Serial.println("Tap closed at end of start, re-pressuring");
-      digitalWrite(pinPSLED, LOW);
+      // APH 157  digitalWrite(pinPSLED, LOW);
 
       if (!manualControl) {
         pressurising = true;
@@ -1395,7 +1373,7 @@ void getEEData() {
   if (nightStartMM > 59) nightStartMM = 30;
 
   nightEndHH = (int)EEPROM.read(EE_NIGHT_END_HH);
-  //	if ((nightEndHH > 10) || (nightEndHH == 0)) nightEndHH = 6;
+  //  if ((nightEndHH > 10) || (nightEndHH == 0)) nightEndHH = 6;
   //  if (nightEndHH > 10) nightEndHH = 6; // APH
 
   nightEndMM = (int)EEPROM.read(EE_NIGHT_END_MM);
@@ -1561,7 +1539,7 @@ void showPumpScreen() { // This is when a Pump is running
   if (pumpARunning) gDisp.drawBitmap(0, 0, 125, 64, FRONT); // 147
   else if (pumpBRunning) gDisp.drawBitmap(0, 0, 125, 64, REAR);
 
-  //	gDisp.drawBitmap(2, 32, 125, 64, RUNNING);
+  //  gDisp.drawBitmap(2, 32, 125, 64, RUNNING);
   gDisp.drawBitmap(0, 64, 125, 64, RUNNING);
 
   gDisp.setFont(202);

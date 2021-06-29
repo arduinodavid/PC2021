@@ -333,3 +333,6 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+PC2021.vcxproj
+*.filters
+PC2021.sln
