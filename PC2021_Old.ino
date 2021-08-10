@@ -59,23 +59,18 @@
   156 - APH Added check if set time value zero, if so dont set time.
   157 - APH Renamed project PC2021 & Added option for both dev & 2021 boards.
   158 - tweaks for PCB
-  159 - restructure code files
-  160 - change amps measurement
-  161 - adds file upload
-  162 - inverts pump control
-  163 - APH changed threshold calculation, changed def testing to Testing to make searching easier
-        Changed ShowCross to make easier for me to see. 
-
+  159 - APH Changes word 'testing' to make searching easier so #define now Testing not testing
 */
-int version = 163;
+int version = 159;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
 //#define USE_BUTTONS_FOR_PS_AND_PUMP // These are for testing using PCB buttons
 //#define useWifi // Dont use this, its David please delete if you agree
+
 
 #include <WiFi.h>
 #include <Wire.h>
@@ -117,7 +112,7 @@ RTC_DS1307 rtc;
 #endif
 
 // APH 157 added this option to cover both boards
-//#define DEV_BOARD
+//  #define DEV_BOARD
 #ifdef DEV_BOARD
 #define pinBuzzer 2 // pin 25 -> IO23 on PCB
 #define pinNewBuzzer 4 // pin 26 -> IO26 on PCB
@@ -129,9 +124,6 @@ RTC_DS1307 rtc;
 #define pinPumpB 19 // pin 36 -> IO19 on PCB
 #define pinPressureSwitch 39 // pin 10 was 39/2 ->IO5 on PCB
 #define pinPumpCurrent 36 // pin 1 -> IO35 on PCB
-
-#define PUMP_ON LOW
-#define PUMP_OFF HIGH
 #else
 #define pinNewBuzzer 23
 #ifdef Testing
@@ -148,12 +140,7 @@ RTC_DS1307 rtc;
 #define pinPressureSwitch 5
 #define pinPumpCurrent 35
 #define pinAmplifier 26 // was pinBuzzer
-
-#define PUMP_ON HIGH
-#define PUMP_OFF LOW
 #endif
-
-#define MV_PER_AMP 185
 
 // #define pinPSLED 25 // pin 10 APH 137 removed
 
@@ -230,7 +217,6 @@ double pumpAmps, pumpAAmps, pumpBAmps, pumpVolts, noPumpVolts, pumpAThreshold, p
 #define MAX_SAMPLES 40
 int pumpSamples[MAX_SAMPLES + 1], sampleIndex;
 byte activePump = 'A';
-int noPumpCount = 639;
 
 #define NO_OF_BEEPS 2
 
@@ -251,9 +237,6 @@ String ledState;
 const int ledPin = 19;
 
 AsyncWebServer server(80);
-
-String webpage = "", fileLine, fileHeader, ptr;
-File fsUploadFile;
 
 char strMsg[300];
 
@@ -320,11 +303,11 @@ void setup() {
 
   pinMode(pinPumpA, OUTPUT);
   pinMode(pinPumpB, OUTPUT);
-  digitalWrite(pinPumpA, PUMP_OFF);
-  digitalWrite(pinPumpB, PUMP_OFF);
+  digitalWrite(pinPumpA, HIGH);
+  digitalWrite(pinPumpB, HIGH);
 
   pinMode(pinPumpCurrent, INPUT);
-  pinMode(pinPressureSwitch, INPUT_PULLUP);
+  pinMode(pinPressureSwitch, INPUT);
 
   pinMode(pinSet, INPUT_PULLUP);
   pinMode(pinA, INPUT_PULLUP);
@@ -358,10 +341,10 @@ void setup() {
   //}
 
 #ifdef useRTC
-  //if (!rtc.isrunning()) {
-  //  Serial.println("setting the time"); // following line sets the RTC to the date & time this sketch was compiled
-  //  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  //}
+  if (!rtc.isrunning()) {
+    Serial.println("setting the time"); // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
 
   DateTime now = rtc.now();
   hh = now.hour(); mm = now.minute(); ss = now.second();
@@ -391,10 +374,10 @@ void setup() {
   delay(100);
   //Serial.println(); Serial.print(APssid); Serial.println(" access point started");
 
-  // APH added for Testing Only 154
+  // APH added for testing Only 154
 #ifdef Testing
-  WiFi.disconnect(false); // WiFi ON at boot-up
-  WiFi.enableAP(true);
+  //WiFi.disconnect(false); // WiFi ON at boot-up
+  //WiFi.enableAP(true);
 #else
   WiFi.disconnect(true); // 152 WiFi OFF at boot-up
   WiFi.enableAP(false);
@@ -404,32 +387,401 @@ void setup() {
 #endif
 
 #ifdef useWebServer
-  initialiseWebServer();
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
+    Serial.println("sending index.html");
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+  });
+
+  // Route to load style.css file
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(SPIFFS, "/style.css", "text/css");
+  });
+
+  // Routes to controls pumps
+  server.on("/onPumpA", HTTP_GET, [](AsyncWebServerRequest * request) {
+
+    if (!btnPressureSwitch.isPressed()) {
+      digitalWrite(pinPumpA, LOW);
+      pumpARunning = true;
+      pumpAState = "ON";
+
+      digitalWrite(pinPumpB, HIGH);
+      pumpBRunning = false;
+      pumpBState = "OFF";
+
+      manualON = true;
+      manualControl = true;
+      request->send(SPIFFS, "/index.html", String(), false, processor);
+      Serial.println("Pump A On");
+    }
+
+    //showPumpScreen();
+  });
+
+  server.on("/offPumpA", HTTP_GET, [](AsyncWebServerRequest * request) {
+    digitalWrite(pinPumpA, HIGH);
+    pumpARunning = false;
+    pumpAState = "OFF";
+    manualON = false;
+    manualControl = false;
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+    Serial.println("Pump A Off");
+
+    //showHome();
+  });
+
+  server.on("/onPumpB", HTTP_GET, [](AsyncWebServerRequest * request) {
+
+    if (!btnPressureSwitch.isPressed()) {
+      digitalWrite(pinPumpB, LOW);
+      pumpBRunning = true;
+      pumpBState = "ON";
+
+      digitalWrite(pinPumpA, HIGH);
+      pumpARunning = false;
+      pumpAState = "OFF";
+
+      manualON = true;
+      manualControl = true;
+      request->send(SPIFFS, "/index.html", String(), false, processor);
+      Serial.println("Pump B On");
+    }
+    //showPumpScreen();
+  });
+
+  // Route to set GPIO
+  server.on("/offPumpB", HTTP_GET, [](AsyncWebServerRequest * request) {
+    digitalWrite(pinPumpB, HIGH);
+    pumpBRunning = false;
+    pumpBState = "OFF";
+    manualON = false;
+    manualControl = false;
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+    Serial.println("Pump B Off");
+
+    //showHome();
+  });
+
+  // APH157 This sends data to webpage
+  server.on("/ampsA", HTTP_GET, [](AsyncWebServerRequest * request) {
+    sprintf(strMsg, "%3.2fA (limit %3.2fA)", pumpAAmps, pumpAThreshold); // APH added 'A ' (limit
+    request->send_P(200, "text/plain", strMsg);
+  });
+
+  server.on("/stateA", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", pumpAState.c_str());
+  });
+
+  server.on("/ampsB", HTTP_GET, [](AsyncWebServerRequest * request) {
+    sprintf(strMsg, "%3.2fA (limit %3.2fA)", pumpBAmps, pumpBThreshold); // APH added 'A ' (limit
+    request->send_P(200, "text/plain", strMsg);
+  });
+
+  server.on("/stateB", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", pumpBState.c_str());
+  });
+
+  server.on("/setA", HTTP_GET, [](AsyncWebServerRequest * request) {
+    // sprintf(strMsg, "Pump A - AMPS = %3.2fA THRESHOLD = %3.2fA)", pumpAAmps, pumpAThreshold); Serial.println(strMsg);
+    // APH157 Changed
+    if (pumpAmps > 0.05 ) {
+      pumpAThreshold = pumpAAmps / 1.125; // V139 // 1.35; // 1.7; V137 // was 1.8 & originally = 2
+      if (pumpAThreshold < 0.2) pumpAThreshold = defaultThreshold; // APH was 0.2 & 2.95
+      saveEEData();
+      // APH157 Added Changed ZZZZZZ
+
+      // turn it off
+      digitalWrite(pinPumpA, HIGH);
+      pumpARunning = false;
+      pumpAState = "OFF";
+      manualON = false;
+      manualControl = false;
+      sprintf(strMsg, "Pump A threshold set to %3.2f amps", pumpAThreshold); Serial.println(strMsg);
+    }
+
+    // APH157 Changed
+    //request->send(SPIFFS, "/index.html", String(), false, processor);
+    request->redirect("/");
+    Serial.println("Set A");
+  });
+
+  server.on("/setB", HTTP_GET, [](AsyncWebServerRequest * request) {
+    // APH157 Added Changed
+    // sprintf(strMsg, "Pump B - AMPS = %3.2fA THRESHOLD = %3.2fA)", pumpBAmps, pumpBThreshold); Serial.println(strMsg);
+    if (pumpAmps > 0.05) {
+      pumpBThreshold = pumpBAmps / 1.125; // V139 // 1.35; // 1.7; V137 // was 1.8 & originally = 2
+      if (pumpBThreshold < 0.2) pumpBThreshold = defaultThreshold; // APH was 0.2 & 2.95
+      // APH157 Added Changed
+      saveEEData();
+
+      // turn it off
+      digitalWrite(pinPumpB, HIGH);
+      pumpBRunning = false;
+      pumpBState = "OFF";
+      manualON = false;
+      manualControl = false;
+      sprintf(strMsg, "Pump B threshold set to %3.2f amps", pumpBThreshold); Serial.println(strMsg);
+    }
+
+    // APH157 Changed
+    //request->send(SPIFFS, "/index.html", String(), false, processor);
+    request->redirect("/");
+    Serial.println("Set B");
+  });
+  // APH157 Added Changed
+  //  server.on("/setA", HTTP_GET, [](AsyncWebServerRequest * request) {
+  //
+  //    sprintf(strMsg, "Pump A pumpAAmps to %3.2f amps", pumpAAmps); Serial.println(strMsg); // ??
+  //
+  //    // APH157 Added Changed
+  //    // if (pumpAThreshold < 0.2) pumpBThreshold = 2.25; // APH was 0.2 & 2.95
+  //    float foo = 12.34567;
+  //    int bar = (int) foo * 1000.0; // bar now = 12345
+  //    foo = (float) bar / 1000.0;   // foo now = 12.345 or something very close but that's how FP is and always has been.
+  //
+  //   int temp = (int) pumpAThreshold * 100.0; // bar now = 355
+  //    tempThreshold = (float) temp / 100.0;   // foo now = 3.555 or something very close but that's how FP is and always has been.
+  //   sprintf(strMsg, "Pump A %3.2f amps", tempThreshold); Serial.println(strMsg); // ??
+  //
+  //    if (pumpAAmps != 0 || (int)pumpAThreshold != (4 / 1.125)) { // Only change threshold if page refreeshed and pump IS running
+  //      pumpAThreshold = pumpAAmps / 1.125; // V139 // 1.35; // 1.7; // was 2 V137
+  //      if (pumpAThreshold < 0.2) pumpAThreshold = 2.25; // APH was 0.2 & 2.95
+  //    }
+  //    // APH157 Added Changed
+  //    saveEEData();
+  //
+  //    // turn it off
+  //    digitalWrite(pinPumpA, HIGH);
+  //    pumpARunning = false;
+  //    pumpAState = "OFF";
+  //    manualON = false;
+  //    manualControl = false;
+  //    sprintf(strMsg, "Pump A threshold set to %3.2f amps", pumpAThreshold); Serial.println(strMsg);
+  //
+  //    request->send(SPIFFS, "/index.html", String(), false, processor);
+  //
+  //    Serial.println("Set A");
+  //  });
+  // APH157 Added Changed
+
+  server.on("/setB", HTTP_GET, [](AsyncWebServerRequest * request) {
+
+    // APH157 Added Changed
+    // if (pumpBThreshold < 0.2) pumpBThreshold = 2.25; // APH was 0.2 & 2.95
+    if (pumpBAmps != 0) { // Only change threshold if page refreeshed and pump IS running
+      pumpBThreshold = pumpBAmps / 1.125; // V139 // 1.35; // 1.7; // was 2 V137
+      if (pumpBThreshold < 0.2) pumpBThreshold = 2.25; // APH was 0.2 & 2.95
+    }
+    // APH157 Added Changed
+    saveEEData();
+
+    // turn it off
+    digitalWrite(pinPumpB, HIGH);
+    pumpBRunning = false;
+    pumpBState = "OFF";
+    manualON = false;
+    manualControl = false;
+    sprintf(strMsg, "Pump B threshold set to %3.2f amps", pumpBThreshold); Serial.println(strMsg);
+
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+
+    Serial.println("Set B");
+  });
+
+  // APH Added new button
+  server.on("/swapPumps", HTTP_GET, [](AsyncWebServerRequest * request) { // 136
+    swapNo += 1;
+    Serial.print(swapNo);
+
+    if (activePump == 'A') {
+      activePump = 'B';
+      Serial.println(" - Pump B now active");
+    }
+    else {
+      activePump = 'A';
+      Serial.println(" - Pump A now active");
+    }
+
+    EEPROM.write(EE_ACTIVE_PUMP, activePump);
+    EEPROM.commit(); // APH 154 added
+
+    if (pumpARunning) {
+      digitalWrite(pinPumpA, HIGH);
+      pumpARunning = false;
+      pumpAState = "OFF";
+      Serial.println("Pump A Stopped");
+      digitalWrite(pinPumpB, LOW);
+      pumpBRunning = true;
+      pumpBState = "ON";
+      Serial.println("Started Pump B");
+
+    }
+    else if (pumpBRunning) {
+      digitalWrite(pinPumpB, HIGH);
+      pumpBRunning = false;
+      pumpBState = "OFF";
+      Serial.println("Pump B Stopped");
+      digitalWrite(pinPumpA, LOW);
+      pumpARunning = true;
+      pumpAState = "ON";
+      Serial.println("Started Pump A");
+    }
+
+    if (pumpARunning || pumpBRunning) {
+      transitionTick.reset();
+      inTransition = true;
+    }
+
+    changeDisplay = true; // 149
+    changeDisplayTick.reset();
+
+    request->send(SPIFFS, "/index.html", String(), false, processor);
+
+  });
+
+  server.on("/activePump", HTTP_GET, [](AsyncWebServerRequest * request) {
+    sprintf(strMsg, "%c) ", activePump); //Serial.println(strMsg);
+    request->send_P(200, "text/plain", strMsg); // APH trying this again 135
+  });
+
+  server.on("/time", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", getTime().c_str());
+  });
+
+  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest * request) {
+    String inputMessage;
+    String inputParam;
+    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
+
+    // APH 156 Added check
+    if (request->hasParam(PARAM_INPUT_1)) { // 1 = "timenow"
+      inputMessage = request->getParam(PARAM_INPUT_1)->value();
+
+      int n = inputMessage.length();
+      char char_array[n + 1];
+
+      strcpy(char_array, inputMessage.c_str());
+
+      char str[3];
+      for (int i = 0; i < 3; i++) str[i] = 0;
+
+      int newhh, newmm;
+
+      str[0] = char_array[0];
+      str[1] = char_array[1];
+      newhh = atoi(str);
+
+      str[0] = char_array[3]; // APH was str[0] = char_array[2];
+      str[1] = char_array[4]; // APH was str[1] = char_array[3];
+      newmm = atoi(str);
+
+      if (newhh == 0 && newmm == 0) {// APH 156 Added check
+        Serial.println("Time not set ERROR");
+      }
+      else {
+        hh = newhh;
+        mm = newmm;
+        ss = 0;
+        sprintf(strMsg, "Time set to %d:%d", hh, mm); Serial.println(strMsg);
+      }
+
+#ifdef useRTC
+      rtc.adjust(DateTime(2020, 4, 29, hh, mm, 0));
+#endif
+      delay(1000);
+      request->send(SPIFFS, "/index.html", String(), false, processor);
+    }
+
+    else if (request->hasParam(PARAM_INPUT_2)) { // 2 = "ontime"
+      inputMessage = request->getParam(PARAM_INPUT_2)->value();
+
+      int n = inputMessage.length();
+      char char_array[n + 1];
+
+      strcpy(char_array, inputMessage.c_str());
+
+      char str[3];
+      for (int i = 0; i < 3; i++) str[i] = 0;
+
+      str[0] = char_array[0];
+      str[1] = char_array[1];
+      nightEndHH = atoi(str);
+
+      str[0] = char_array[3]; // APH was 2
+      str[1] = char_array[4]; // APH was 3
+      nightEndMM = atoi(str);
+
+      sprintf(strMsg, "Night end  = %02d:%02d", nightEndHH, nightEndMM); Serial.println(strMsg);
+
+      saveEEData();
+
+      request->send(SPIFFS, "/index.html", String(), false, processor);
+    }
+
+    else if (request->hasParam(PARAM_INPUT_3)) { // 3 = "offtime"
+      inputMessage = request->getParam(PARAM_INPUT_3)->value();
+
+      int n = inputMessage.length();
+      char char_array[n + 1];
+
+      strcpy(char_array, inputMessage.c_str());
+
+      char str[3];
+      for (int i = 0; i < 3; i++) str[i] = 0;
+
+      str[0] = char_array[0];
+      str[1] = char_array[1];
+      nightStartHH = atoi(str);
+
+      str[0] = char_array[3]; // APH was 2
+      str[1] = char_array[4]; // APH was 3
+      nightStartMM = atoi(str);
+
+      sprintf(strMsg, "Night start = %02d:%02d", nightStartHH, nightStartMM); Serial.println(strMsg);
+
+      saveEEData();
+
+      request->send(SPIFFS, "/index.html", String(), false, processor);
+    }
+    else {
+      //inputMessage = "No message sent";
+      //inputParam = "none";
+    }
+  });
 #endif
   WiFi.setSleep(false);
   server.begin();
 
   ledcSetup(0, 1000, 10);
 
+// APH 157 added as only used on dev board
 #ifdef DEV_BOARD
   ledcAttachPin(pinBuzzer, 0);
 #else
   ledcAttachPin(pinAmplifier, 0);
 #endif
+// APH 157 added as only used on dev board
 
   if (btnPressureSwitch.isPressed()) {
     // APH 157  digitalWrite(pinPSLED, HIGH);
     tapOpen = true;
     Serial.println("Tap is OPEN");
+    // APH 155 changed
 
+    //    digitalWrite(pinPumpA, LOW); // start A
+    //    pumpARunning = true;
+    //    pumpAState = "ON";
+    //    Serial.println("Started pump A");
+    // APH 155 added to check which pump last used and start with that
     if (activePump == 'A') { // insert whatever rev this is and add a comment !!!!!!!!
-      digitalWrite(pinPumpA, PUMP_ON); // start A
+      digitalWrite(pinPumpA, LOW); // start A
       pumpARunning = true;
       pumpAState = "ON";
       Serial.println("Started pump A");
     }
     else {
-      digitalWrite(pinPumpB, PUMP_ON); // start B
+      digitalWrite(pinPumpB, LOW); // start B
       pumpBRunning = true;
       pumpBState = "ON";
       Serial.println("Started pump B");
@@ -484,13 +836,13 @@ void loop() {
           allOff.reset(); // 138
 
           if (activePump == 'A') {
-            digitalWrite(pinPumpA, PUMP_ON); //
+            digitalWrite(pinPumpA, LOW); //
             pumpARunning = true;
             pumpAState = "ON";
             Serial.println("Started pump A");
           }
           else if (activePump == 'B') {
-            digitalWrite(pinPumpB, PUMP_ON); //
+            digitalWrite(pinPumpB, LOW); //
             pumpBRunning = true;
             pumpBState = "ON";
             Serial.println("Started pump B");
@@ -524,8 +876,8 @@ void loop() {
       pressurising = false;
       tapOpen = false;
 
-      digitalWrite(pinPumpB, PUMP_OFF); //
-      digitalWrite(pinPumpA, PUMP_OFF); //
+      digitalWrite(pinPumpB, HIGH); //
+      digitalWrite(pinPumpA, HIGH); //
 
       pumpARunning = pumpBRunning = false;
       pumpAState = "OFF"; pumpBState = "OFF";
@@ -560,8 +912,6 @@ void loop() {
   }
 
   if (secTick.check()) {
-
-
     // non RTC time stuff
     ss += 1;
     if (ss >= 60) {
@@ -595,11 +945,10 @@ void loop() {
       showTime();
     }
 
-    //Serial.println(digitalRead(pinPressureSwitch));
     //sprintf(strMsg, "%s => volts now = %3.2f, amps = %3.2f, A %s, B %s", strTime, pumpVolts, pumpAmps, pumpAState.c_str(), pumpBState.c_str());
     //sprintf(strMsg, "%s => no pump volts = %3.2f, volts now = %3.2f, amps = %3.2f, A %s, B %s", strTime, noPumpVolts, pumpVolts, pumpAmps, pumpAState.c_str(), pumpBState.c_str());
     sprintf(strMsg, "Time:%02d:%02d:%02d(%d), amps: %3.2f, A:%s, B:%s, tap:%d", hh, mm, ss, night, pumpAmps, pumpAState.c_str(), pumpBState.c_str(), tapOpen);
-   // Serial.println(strMsg); // *********************************
+    //Serial.println(strMsg); // *********************************
 
     if (pumpARunning || pumpBRunning) {
       if (display != dispPumpRunning) showPumpScreen();
@@ -636,13 +985,13 @@ void loop() {
             Serial.println("Night end - pressurising");
 
             if (activePump == 'A') {
-              digitalWrite(pinPumpA, PUMP_ON); //
+              digitalWrite(pinPumpA, LOW); //
               pumpARunning = true;
               pumpAState = "ON";
               Serial.println("Started pump A");
             }
             else if (activePump == 'B') {
-              digitalWrite(pinPumpB, PUMP_ON); //
+              digitalWrite(pinPumpB, LOW); //
               pumpBRunning = true;
               pumpBState = "ON";
               Serial.println("Started pump B");
@@ -674,10 +1023,7 @@ void loop() {
 
   if (sampleTick.check()) {
 
-      int pumpCountNow = analogRead(pinPumpCurrent) - noPumpCount; // 160
-      if (pumpCountNow < 0) pumpCountNow *= -1;
-
-      pumpSamples[sampleIndex] = pumpCountNow;
+    pumpSamples[sampleIndex] = analogRead(pinPumpCurrent);
     sampleIndex += 1;
     if (sampleIndex >= MAX_SAMPLES) sampleIndex = 0;
 
@@ -685,15 +1031,13 @@ void loop() {
 
     for (int i = 0; i < MAX_SAMPLES; i++) aggregate += pumpSamples[i];
 
-    pumpVolts = (double)aggregate * 2.50 / (double) noPumpCount / MAX_SAMPLES;
+    pumpVolts = (double)aggregate * 4.74 / 701 / MAX_SAMPLES;
     //pumpVolts = (double)aggregate * 2.35 / 697 / MAX_SAMPLES; // ***************************
 
-    // 160
-    //if (!pumpARunning && !pumpBRunning && pumpVolts > 0.1) noPumpVolts = pumpVolts;
-    //else noPumpVolts = 2.35;
+    if (!pumpARunning && !pumpBRunning && pumpVolts > 0.1) noPumpVolts = pumpVolts;
+    else noPumpVolts = 2.35;
 
-    //pumpAmps = (noPumpVolts - pumpVolts) * 4.5;
-    pumpAmps = pumpVolts * 1000 / MV_PER_AMP; // 160
+    pumpAmps = (noPumpVolts - pumpVolts) * 4.5;
 
     if (pumpARunning) {
 
@@ -702,12 +1046,11 @@ void loop() {
       else pumpAAmps = 5;
       pumpAmps = pumpAAmps;
 #else
-      //pumpAAmps = (noPumpVolts - pumpVolts) * 4.5;
-        pumpAAmps = pumpAmps;
+      pumpAAmps = (noPumpVolts - pumpVolts) * 4.5;
 #endif
 
       if (!inTransition && (pumpAAmps < pumpAThreshold) && !manualControl && !pumpIsStarting && !pressurising) {
-        digitalWrite(pinPumpA, PUMP_OFF); // turn A off //
+        digitalWrite(pinPumpA, HIGH); // turn A off //
         pumpARunning = false;
         pumpAState = "OFF";
 
@@ -715,7 +1058,7 @@ void loop() {
         transitionTick.reset();
         Serial.println("Changing A to B");
 
-        digitalWrite(pinPumpB, PUMP_ON); // and B on //
+        digitalWrite(pinPumpB, LOW); // and B on //
         pumpBRunning = true;
         pumpBState = "ON";
         activePump = 'B';
@@ -739,12 +1082,11 @@ void loop() {
       else pumpBAmps = 5;
       pumpAmps = pumpBAmps;
 #else
-      //pumpBAmps = (noPumpVolts - pumpVolts) * 4.5;
-      pumpBAmps = pumpAmps;
+      pumpBAmps = (noPumpVolts - pumpVolts) * 4.5;
 #endif
 
       if (!inTransition && (pumpBAmps < pumpBThreshold) && !manualControl && !pumpIsStarting && !pressurising) {
-        digitalWrite(pinPumpB, PUMP_OFF); // turn B off //
+        digitalWrite(pinPumpB, HIGH); // turn B off //
         pumpBRunning = false;
         pumpBState = "OFF";
 
@@ -752,7 +1094,7 @@ void loop() {
         transitionTick.reset();
         Serial.println("Changing B to A");
 
-        digitalWrite(pinPumpA, PUMP_ON); // and A on //
+        digitalWrite(pinPumpA, LOW); // and A on //
         pumpARunning = true;
         activePump = 'A';
         pumpAState = "ON";
@@ -813,7 +1155,7 @@ void loop() {
       // check state after 5 secs to see if new barrel has water or not
       if (pumpARunning) {
         if (pumpAAmps < pumpAThreshold) {
-          digitalWrite(pinPumpA, PUMP_OFF); // turn A off //
+          digitalWrite(pinPumpA, HIGH); // turn A off //
           pumpARunning = false;
           pumpAState = "OFF";
           Serial.println("All off - no water (A was running)");
@@ -823,7 +1165,7 @@ void loop() {
       }
       else if (pumpBRunning) {
         if (pumpBAmps < pumpBThreshold) {
-          digitalWrite(pinPumpB, PUMP_OFF); // turn B off //
+          digitalWrite(pinPumpB, HIGH); // turn B off //
           pumpBRunning = false;
           pumpBState = "OFF";
           Serial.println("All off - no water (B was running)");
@@ -838,12 +1180,12 @@ void loop() {
     if (pumpARunning || pumpBRunning) {
       Serial.println("All off - 3 minute timeout");
       // pump A
-      digitalWrite(pinPumpA, PUMP_OFF); // turn A off //
+      digitalWrite(pinPumpA, HIGH); // turn A off //
       pumpARunning = false;
       pumpAState = "OFF";
 
       //pump B
-      digitalWrite(pinPumpB, PUMP_OFF); // turn B off //
+      digitalWrite(pinPumpB, HIGH); // turn B off //
       pumpBRunning = false;
       pumpBState = "OFF";
 
@@ -864,6 +1206,102 @@ void loop() {
     if (longPressCount == 5) beep(3, 1, 1, 0);
   }
 }
+
+
+// Replaces placeholder with state value
+// APH157 Added Changed
+String processor(const String& var) {
+  //Serial.println(var);
+
+  if (var == "STATEA") {
+    if (!digitalRead(pinPumpA)) ledState = "ON"; //
+    else ledState = "OFF";
+    return ledState;
+  }
+
+  else if (var == "STATEB") {
+    if (!digitalRead(pinPumpB)) ledState = "ON"; //
+    else ledState = "OFF";
+    return ledState;
+  }
+
+  else if (var == "ampsA") {
+    sprintf(strMsg, "%3.2fA (limit %3.2fA)", pumpAAmps, pumpAThreshold);
+    return String(strMsg);
+  }
+
+  else if (var == "ampsB") {
+    sprintf(strMsg, "%3.2fA (limit %3.2fA)", pumpBAmps, pumpBThreshold);
+    return String(strMsg);
+  }
+
+  else if (var == "time") {
+    return getTime();
+  }
+
+  else if (var == "systemOnTime") { // I have changed from currentontime
+    char str[5];
+    sprintf(str, "%02d:%02d", nightEndHH, nightEndMM); // APH added ':' was sprintf(str, "%02d%02d", nightEndHH, nightEndMM);
+    return String(str);
+  }
+
+  else if (var == "systemOffTime") { // I have changed from currentofftime
+    char str[5];
+    sprintf(str, "%02d:%02d", nightStartHH, nightStartMM); // APH added ':'
+    return String(str);
+  }
+
+  return String();
+}
+// APH157 Added Changed
+//String processor(const String& var) {
+//  //Serial.println(var);
+//
+//  if (var == "STATEA") {
+//    if (!digitalRead(pinPumpA)) ledState = "ON"; //
+//    else ledState = "OFF";
+//    return ledState;
+//  }
+//
+//  else if (var == "STATEB") {
+//    if (!digitalRead(pinPumpB)) ledState = "ON"; //
+//    else ledState = "OFF";
+//    return ledState;
+//  }
+//
+//  else if (var == "ampsA") {
+//    return String(pumpAAmps).c_str();
+//  }
+//
+//  else if (var == "ampsB") {
+//    return String(pumpBAmps).c_str();
+//  }
+//
+//  else if (var == "time") {
+//    return getTime();
+//  }
+//
+//  else if (var == "systemOnTime") { // I have changed from currentontime
+//    char str[5];
+//    sprintf(str, "%02d:%02d", nightEndHH, nightEndMM); // APH added ':' was sprintf(str, "%02d%02d", nightEndHH, nightEndMM);
+//    return String(str);
+//  }
+//
+//  else if (var == "systemOffTime") { // I have changed from currentofftime
+//    char str[5];
+//    sprintf(str, "%02d:%02d", nightStartHH, nightStartMM); // APH added ':'
+//    return String(str);
+//  }
+//
+//  // APH 156 added version
+//  //   else if (var == "version") {
+//  //      return String(version).c_str();
+//  //  }
+//  // APH 156
+//
+//  return String();
+//}
+// APH157 Added Changed
 
 String getTime() {
   char strTime[10];
@@ -911,15 +1349,21 @@ void getEEData() {
   data.b[0] = EEPROM.read(EE_A_THRESHOLD);
   data.b[1] = EEPROM.read(EE_A_THRESHOLD + 1);
   pumpAThreshold = (double)data.d / 100;
-
+  // APH157 Added ZZZZZZ
+  // sprintf(strMsg, "Pump A threshold retrieved %3.2f", pumpAThreshold);
   if (pumpAThreshold < defaultThreshold * 0.5 || pumpAThreshold >= defaultThreshold * 2.5) pumpAThreshold = defaultThreshold;
+  // if (pumpAThreshold < 0.2 || pumpAThreshold >= 5) pumpAThreshold = defaultThreshold; // APH157 Added Changed
+  // APH157 Added Changed
 
   data.b[0] = EEPROM.read(EE_B_THRESHOLD);
   data.b[1] = EEPROM.read(EE_B_THRESHOLD + 1);
   pumpBThreshold = (double)data.d / 100;
   //sprintf(strMsg, "Read : b[0] = %d, b[1] = %d", data.b[0], data.b[1]); Serial.println(strMsg);
 
+  // APH157 Added
   if (pumpBThreshold < defaultThreshold * 0.5 || pumpBThreshold >= defaultThreshold * 2.5) pumpBThreshold = defaultThreshold;
+  // if (pumpBThreshold < 0.2 || pumpBThreshold >= 5) pumpBThreshold = defaultThreshold; // APH157 Added Changed
+  // APH157 Added Changed
 
   sprintf(strMsg, "Thresholds: Pump A = %3.2fA, Pump B = %3.2fA", pumpAThreshold, pumpBThreshold); Serial.println(strMsg);
 
@@ -930,20 +1374,24 @@ void getEEData() {
   if (nightStartMM > 59) nightStartMM = 30;
 
   nightEndHH = (int)EEPROM.read(EE_NIGHT_END_HH);
-  if (nightEndHH > 10) nightEndHH = 6; 
+  //  if ((nightEndHH > 10) || (nightEndHH == 0)) nightEndHH = 6;
+  //  if (nightEndHH > 10) nightEndHH = 6; // APH
 
   nightEndMM = (int)EEPROM.read(EE_NIGHT_END_MM);
-  if (nightEndMM > 59) nightEndMM = 30;
+  if (nightEndMM > 59) nightStartMM = 30;
+  //nightEndHH = 0; nightEndMM = 2;
 
+  // APH Added to retrieve last pump
   // APH157 Added
   activePump = (char)EEPROM.read(EE_ACTIVE_PUMP);
   sprintf(strMsg, "Active PUMP %c", activePump); Serial.println(strMsg);
-
+  // APH157 Added Changed
   if ((activePump != 'A') && (activePump != 'B')) {
     activePump = 'A';
     EEPROM.write(EE_ACTIVE_PUMP, 'A');
     EEPROM.commit();
   }
+  // APH Added
 
   if (activePump == 'A') Serial.println("Pump A active");
   else Serial.println("Pump B active");
@@ -1111,7 +1559,7 @@ void showPumpScreen() { // This is when a Pump is running
   }
 }
 
-// APH Version 163
+// APH Version 140
 void showCross(uint8_t col) {
 
   gDisp.clearScreen();
@@ -1132,21 +1580,14 @@ void showCross(uint8_t col) {
 
   gDisp.setColor(col);
   // Top Left to Bottom Right
-  for (int i = 0; i < 10; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
-  for (int i = 0; i < 10; i++) gDisp.drawLine(0, i, 127 - i, height);
+  for (int i = 0; i < 9; i++) gDisp.drawLine(i, 0, 127, height - i);
+  for (int i = 0; i < 9; i++) gDisp.drawLine(0, i, 127 - i, height);
 
   // Bottom Left to Top Right
-  for (int i = 0; i < 10; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
-  for (int i = 0; i < 10; i++) gDisp.drawLine(i, height, 127, i);
+  for (int i = 0; i < 9; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
+  for (int i = 0; i < 9; i++) gDisp.drawLine(i, height, 127, i);
 
   gDisp.setColor(WHITE);
-  // APH 163 Added Outer Cross
-  // Top Left to Bottom Right Outer Cross
-  for (int i = 11; i < 14; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
-  for (int i = 11; i < 14; i++) gDisp.drawLine(0, i, 127 - i, height);
-  // Bottom Left to Top Right
-  for (int i = 11; i < 14; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
-  for (int i = 11; i < 14; i++) gDisp.drawLine(i, height, 127, i);
 
   if (activePump == 'A') {
     gDisp.drawBitmap(0, picPos, 125, 64, REAR);
@@ -1280,12 +1721,12 @@ void buttonProcessor() {
     if (sysMode == modeNormal) {
       if (pumpARunning || pumpBRunning) {
         if (pumpARunning) {
-          pumpAThreshold = pumpAAmps / 1.25; // V163 WAS 2; // 123
+          pumpAThreshold = pumpAAmps / 2; // 123
           if (pumpAThreshold < 0.2) pumpAThreshold = defaultThreshold; // APH157 Changed was 0.2;
           sprintf(strMsg, "Pump A threshold set to %3.2f", pumpAThreshold);
         }
         else if (pumpBRunning) {
-          pumpBThreshold = pumpBAmps / 1.25; // V163 WAS 2; // 123
+          pumpBThreshold = pumpBAmps / 2; // 123
           if (pumpBThreshold < 0.2) pumpBThreshold = 0.2;
           sprintf(strMsg, "Pump B threshold set to %3.2f", pumpBThreshold);
         }
@@ -1378,12 +1819,12 @@ void buttonProcessor() {
     if (sysMode == modeNormal) {
       if (!pumpARunning) {
         pumpBRunning = false;
-        digitalWrite(pinPumpB, PUMP_OFF); //
+        digitalWrite(pinPumpB, HIGH); //
         Serial.println("Started A");
 
         pumpARunning = true;
         pumpAState = "on";
-        digitalWrite(pinPumpA, PUMP_ON); //
+        digitalWrite(pinPumpA, LOW); //
         manualON = true;
         manualControl = true;
         showPumpScreen();
@@ -1391,7 +1832,7 @@ void buttonProcessor() {
       else {
         pumpARunning = false;
         pumpAState = "off";
-        digitalWrite(pinPumpA, PUMP_OFF); //
+        digitalWrite(pinPumpA, HIGH); //
         manualControl = false;
         showHome();
       }
@@ -1445,11 +1886,11 @@ void buttonProcessor() {
     if (sysMode == modeNormal) {
       if (!pumpBRunning) {
         pumpARunning = false;
-        digitalWrite(pinPumpA, PUMP_OFF); //
+        digitalWrite(pinPumpA, HIGH); //
 
         pumpBRunning = true;
         pumpBState = "on";
-        digitalWrite(pinPumpB, PUMP_ON); //
+        digitalWrite(pinPumpB, LOW); //
         manualON = true;
         manualControl = true;
         Serial.println("Started B");
@@ -1460,7 +1901,7 @@ void buttonProcessor() {
         pumpBRunning = false;
         pumpBState = "off";
         manualControl = false;
-        digitalWrite(pinPumpB, PUMP_OFF); //
+        digitalWrite(pinPumpB, HIGH); //
 
         showHome();
       }
