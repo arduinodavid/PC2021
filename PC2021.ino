@@ -70,7 +70,7 @@
 int version = 163;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -141,6 +141,7 @@ RTC_DS1307 rtc;
 #define pinScreenButton 25
 #define pinSet 32
 #endif
+
 #define pinPumpA 18
 #define pinPumpB 19
 #define pinB 17
@@ -151,6 +152,7 @@ RTC_DS1307 rtc;
 
 #define PUMP_ON HIGH
 #define PUMP_OFF LOW
+
 #endif
 
 #define MV_PER_AMP 185
