@@ -94,7 +94,7 @@ int version = 163;
 #include "imagePump.h"
 #include "imageRunning.h"
 #include "imageEmpty.h" // APH 155 added
-// test#include "empty3.h"
+// test #include "empty3.h"
 #include "pitches.h" // APH 155 added
 
 // colors
@@ -871,7 +871,7 @@ String getTime() {
   char strTime[10];
   sprintf(strTime, "%02d:%02d", hh, mm);
   String str(strTime);
-  //Serial.println(str);
+  Serial.println(str); // APH enabled again for testing
   return str;
 }
 

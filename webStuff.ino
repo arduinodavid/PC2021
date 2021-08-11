@@ -376,7 +376,8 @@ String processor(const String& var) {
     }
 
     else if (var == "time") {
-        return getTime();
+   Serial.println(getTime()); // APH enabled again for testing
+       return getTime();
     }
 
     else if (var == "systemOnTime") { // I have changed from currentontime
