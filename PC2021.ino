@@ -70,13 +70,12 @@
 int version = 163;
 
 //#define david // APH 154 added this feature from Energy Miser
-#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+//#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
 //#define USE_BUTTONS_FOR_PS_AND_PUMP // These are for testing using PCB buttons
-//#define useWifi // Dont use this, its David please delete if you agree
-
+//#define useWifi // Dont use this, its for David
 #include <WiFi.h>
 #include <Wire.h>
 #include <RTClib.h>

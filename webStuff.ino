@@ -110,7 +110,7 @@ void initialiseWebServer() { // 159
             // APH157 Added Changed ZZZZZZ
 
             // turn it off
-            digitalWrite(pinPumpA, HIGH);
+            digitalWrite(pinPumpA, LOW); // APH 163 was HIGH
             pumpARunning = false;
             pumpAState = "OFF";
             manualON = false;
@@ -134,7 +134,7 @@ void initialiseWebServer() { // 159
             saveEEData();
 
             // turn it off
-            digitalWrite(pinPumpB, HIGH);
+            digitalWrite(pinPumpB, LOW); // APH 163 was HIGH
             pumpBRunning = false;
             pumpBState = "OFF";
             manualON = false;
@@ -158,7 +158,7 @@ void initialiseWebServer() { // 159
         saveEEData();
 
         // turn it off
-        digitalWrite(pinPumpB, HIGH);
+        digitalWrite(pinPumpB, LOW); // APH 163 was HIGH
         pumpBRunning = false;
         pumpBState = "OFF";
         manualON = false;
@@ -188,22 +188,22 @@ void initialiseWebServer() { // 159
         EEPROM.commit(); // APH 154 added
 
         if (pumpARunning) {
-            digitalWrite(pinPumpA, HIGH);
+            digitalWrite(pinPumpA, LOW); // APH 163 was HIGH
             pumpARunning = false;
             pumpAState = "OFF";
             Serial.println("Pump A Stopped");
-            digitalWrite(pinPumpB, LOW);
+            digitalWrite(pinPumpB, HIGH); // APH 163 was LOW
             pumpBRunning = true;
             pumpBState = "ON";
             Serial.println("Started Pump B");
 
         }
         else if (pumpBRunning) {
-            digitalWrite(pinPumpB, HIGH);
+            digitalWrite(pinPumpB, LOW); // APH 163 was HIGH
             pumpBRunning = false;
             pumpBState = "OFF";
             Serial.println("Pump B Stopped");
-            digitalWrite(pinPumpA, LOW);
+            digitalWrite(pinPumpA, HIGH); // APH 163 was LOW
             pumpARunning = true;
             pumpAState = "ON";
             Serial.println("Started Pump A");
