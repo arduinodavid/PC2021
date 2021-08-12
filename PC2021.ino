@@ -3,7 +3,7 @@
    Created: 24/11/2019 14:58:05
    Author:     DAVID-HP\David
 */
-#define Ver 41 // fir the digole!!!!
+#define Ver 41 // for the digole!!!!
 #define _Digole_Serial_I2C_ // for the graphics
 
 // APH Beep(3,1,9,1000) means beep 3 times for 0.1 sec with an interval of 0.9secs between at a frequency of 1Kz
@@ -65,9 +65,9 @@
   162 - inverts pump control
   163 - APH changed threshold calculation, changed def testing to Testing to make searching easier
         Changed ShowCross to make easier for me to see. 
-
+  164 - APH 
 */
-int version = 163;
+int version = 164;
 
 //#define david // APH 154 added this feature from Energy Miser
 //#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
@@ -861,7 +861,7 @@ void loop() {
 
   if (longPress.check() && btnScreen.isPressed()) { // 152
     longPressCount += 1;
-    if (longPressCount == 3) beep(2, 1, 1, 0); // 153 was 1 beep
+    if (longPressCount == 3) beep(2, 1, 1, 0); beep(1, 1, 9, 1000); // 164 added testing only to beep amp
     if (longPressCount == 5) beep(3, 1, 1, 0);
   }
 }
