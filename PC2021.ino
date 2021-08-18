@@ -65,7 +65,9 @@
   162 - inverts pump control
   163 - APH changed threshold calculation, changed def testing to Testing to make searching easier
         Changed ShowCross to make easier for me to see.
-  164 - APH
+  164 - APH added amp/speaker beep to long press. Improved showcross display colours
+        Added code the set RTC. For testing change extensionMode to false.
+  165 - APH
 */
 int version = 164;
 
@@ -265,7 +267,7 @@ char strMsg[300];
 //#define NOTE_B3 247
 //#define NOTE_B4 494
 
-boolean beeping = false, displaybeeping = false, extensionMode = true;  // 148
+boolean beeping = false, displaybeeping = false, extensionMode = false;  // 148 164 was true chamged for testing only
 unsigned long startMillis;
 
 int onTime, onCount, offCount, offTime, beepCount, beepFreq;
@@ -861,8 +863,8 @@ void loop() {
 
   if (longPress.check() && btnScreen.isPressed()) { // 152
     longPressCount += 1;
-    if (longPressCount == 3) beep(2, 1, 1, 0); beep(1, 1, 9, 1000); // 164 added testing only to beep amp
-    if (longPressCount == 5) beep(3, 1, 1, 0);
+    if (longPressCount == 3) beep(2, 1, 1, 1000);// beep(1, 1, 9, 1000); // 164 added testing only to beep amp
+    if (longPressCount == 5) beep(3, 1, 1, 1000); // 164 were 0 now 1000
   }
 }
 
@@ -1149,7 +1151,17 @@ void showCross(uint8_t col) {
   for (int i = 0; i < 10; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
   for (int i = 0; i < 10; i++) gDisp.drawLine(i, height, 127, i);
 
-  gDisp.setColor(WHITE);
+//#define RED 0xe0
+//#define ORANGE 0xf0
+//#define GREEN 0x10
+//#define YELLOW 0xfc
+//#define WHITE 0xff
+//#define BLACK 0x00
+//#define BLUE 0x06
+//#define GREY 0x92
+//#define TURQUOISE 0x1f
+
+  gDisp.setColor(ORANGE);
   if (activePump == 'A') {
     gDisp.drawBitmap(0, picPos, 125, 64, REAR);
   }
