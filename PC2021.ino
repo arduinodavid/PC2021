@@ -64,8 +64,8 @@
   161 - adds file upload
   162 - inverts pump control
   163 - APH changed threshold calculation, changed def testing to Testing to make searching easier
-        Changed ShowCross to make easier for me to see. 
-  164 - APH 
+        Changed ShowCross to make easier for me to see.
+  164 - APH
 */
 int version = 164;
 
@@ -600,7 +600,7 @@ void loop() {
     //sprintf(strMsg, "%s => volts now = %3.2f, amps = %3.2f, A %s, B %s", strTime, pumpVolts, pumpAmps, pumpAState.c_str(), pumpBState.c_str());
     //sprintf(strMsg, "%s => no pump volts = %3.2f, volts now = %3.2f, amps = %3.2f, A %s, B %s", strTime, noPumpVolts, pumpVolts, pumpAmps, pumpAState.c_str(), pumpBState.c_str());
     sprintf(strMsg, "Time:%02d:%02d:%02d(%d), amps: %3.2f, A:%s, B:%s, tap:%d", hh, mm, ss, night, pumpAmps, pumpAState.c_str(), pumpBState.c_str(), tapOpen);
-   // Serial.println(strMsg); // *********************************
+    // Serial.println(strMsg); // *********************************
 
     if (pumpARunning || pumpBRunning) {
       if (display != dispPumpRunning) showPumpScreen();
@@ -675,10 +675,10 @@ void loop() {
 
   if (sampleTick.check()) {
 
-      int pumpCountNow = analogRead(pinPumpCurrent) - noPumpCount; // 160
-      if (pumpCountNow < 0) pumpCountNow *= -1;
+    int pumpCountNow = analogRead(pinPumpCurrent) - noPumpCount; // 160
+    if (pumpCountNow < 0) pumpCountNow *= -1;
 
-      pumpSamples[sampleIndex] = pumpCountNow;
+    pumpSamples[sampleIndex] = pumpCountNow;
     sampleIndex += 1;
     if (sampleIndex >= MAX_SAMPLES) sampleIndex = 0;
 
@@ -704,7 +704,7 @@ void loop() {
       pumpAmps = pumpAAmps;
 #else
       //pumpAAmps = (noPumpVolts - pumpVolts) * 4.5;
-        pumpAAmps = pumpAmps;
+      pumpAAmps = pumpAmps;
 #endif
 
       if (!inTransition && (pumpAAmps < pumpAThreshold) && !manualControl && !pumpIsStarting && !pressurising) {
@@ -931,7 +931,7 @@ void getEEData() {
   if (nightStartMM > 59) nightStartMM = 30;
 
   nightEndHH = (int)EEPROM.read(EE_NIGHT_END_HH);
-  if (nightEndHH > 10) nightEndHH = 6; 
+  if (nightEndHH > 10) nightEndHH = 6;
 
   nightEndMM = (int)EEPROM.read(EE_NIGHT_END_MM);
   if (nightEndMM > 59) nightEndMM = 30;
@@ -1131,6 +1131,15 @@ void showCross(uint8_t col) {
     picPos = 30;
   }
 
+  gDisp.setColor(WHITE);
+  // APH 163 Added Outer Cross
+  // Top Left to Bottom Right Outer Cross
+  for (int i = 11; i < 14; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
+  for (int i = 11; i < 14; i++) gDisp.drawLine(0, i, 127 - i, height);
+  // Bottom Left to Top Right
+  for (int i = 11; i < 14; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
+  for (int i = 11; i < 14; i++) gDisp.drawLine(i, height, 127, i);
+
   gDisp.setColor(col);
   // Top Left to Bottom Right
   for (int i = 0; i < 10; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
@@ -1141,14 +1150,6 @@ void showCross(uint8_t col) {
   for (int i = 0; i < 10; i++) gDisp.drawLine(i, height, 127, i);
 
   gDisp.setColor(WHITE);
-  // APH 163 Added Outer Cross
-  // Top Left to Bottom Right Outer Cross
-  for (int i = 11; i < 14; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
-  for (int i = 11; i < 14; i++) gDisp.drawLine(0, i, 127 - i, height);
-  // Bottom Left to Top Right
-  for (int i = 11; i < 14; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
-  for (int i = 11; i < 14; i++) gDisp.drawLine(i, height, 127, i);
-
   if (activePump == 'A') {
     gDisp.drawBitmap(0, picPos, 125, 64, REAR);
   }
