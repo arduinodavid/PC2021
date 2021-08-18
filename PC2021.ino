@@ -67,7 +67,7 @@
         Changed ShowCross to make easier for me to see.
   164 - APH added amp/speaker beep to long press. Improved showcross display colours
         Added code the set RTC. For testing change extensionMode to false.
-  165 - APH
+  165 - APH Change font when extension not being used to 
 */
 int version = 164;
 
@@ -1013,8 +1013,17 @@ void showHome() { // ZZZ
     showCross(RED);
   }
   // APH 153 Added
-  gDisp.setFont(202);
-  // APH    gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
+  
   gDisp.setColor(TURQUOISE);
   if (APActive) {
     gDisp.setTextPosAbs(46, 78);
@@ -1037,7 +1046,16 @@ void showTime() {
   int ypos = 118, xpos = 13;
 
   gDisp.setColor(BLACK);
-  gDisp.setFont(202);
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
 
   if (sysMode == modeNormal) {
 
@@ -1098,7 +1116,16 @@ void showPumpScreen() { // This is when a Pump is running
   //  gDisp.drawBitmap(2, 32, 125, 64, RUNNING);
   gDisp.drawBitmap(0, 64, 125, 64, RUNNING);
 
-  gDisp.setFont(202);
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
 
   int xpos = 10, ypos = 110;
 
@@ -1188,7 +1215,16 @@ void showAmps() {
   gDisp.drawBox(xpos, ypos - 30, 124 - xpos, 30);
 
   gDisp.setTextPosAbs(xpos, ypos);
-  gDisp.setFont(202);
+   // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
   gDisp.setColor(TURQUOISE);
 
   if (pumpARunning) sprintf(strMsg, "AMPS = %3.2f", pumpAAmps);
@@ -1311,7 +1347,16 @@ void buttonProcessor() {
 
         gDisp.clearScreen();
 
-        gDisp.setFont(202);
+   // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
         gDisp.setTextPosAbs(25, 50);
         gDisp.setColor(RED);
         gDisp.print("SET TIME");
@@ -1335,7 +1380,16 @@ void buttonProcessor() {
           sysMode = modeSetNightStart;
 
           gDisp.clearScreen();
-          gDisp.setFont(202);
+   // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
           gDisp.setTextPosAbs(2, 50);
           gDisp.setColor(RED);
           gDisp.print("NIGHT START");
@@ -1355,8 +1409,17 @@ void buttonProcessor() {
           sysMode = modeSetNightEnd;
 
           gDisp.clearScreen();
-          gDisp.setFont(202);
-          gDisp.setTextPosAbs(20, 50);
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
+         gDisp.setTextPosAbs(20, 50);
           gDisp.setColor(RED);
           gDisp.print("NIGHT END");
 
