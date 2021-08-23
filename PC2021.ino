@@ -3,7 +3,7 @@
    Created: 24/11/2019 14:58:05
    Author:     DAVID-HP\David
 */
-#define Ver 41 // fir the digole!!!!
+#define Ver 41 // for the digole!!!!
 #define _Digole_Serial_I2C_ // for the graphics
 
 // APH Beep(3,1,9,1000) means beep 3 times for 0.1 sec with an interval of 0.9secs between at a frequency of 1Kz
@@ -63,20 +63,21 @@
   160 - change amps measurement
   161 - adds file upload
   162 - inverts pump control
- 
-
+  163 - APH changed threshold calculation, changed def testing to Testing to make searching easier
+        Changed ShowCross to make easier for me to see.
+  164 - APH added amp/speaker beep to long press. Improved showcross display colours
+        Added code the set RTC. For testing change extensionMode to false.
+  165 - APH Change font when extension not being used to 
 */
-int version = 162;
+int version = 164;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+//#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension bo>>>>>>> master
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
 //#define USE_BUTTONS_FOR_PS_AND_PUMP // These are for testing using PCB buttons
-//#define useWifi // Dont use this, its David please delete if you agree
-
-
+//#define useWifi // Dont use this, its for David
 #include <WiFi.h>
 #include <Wire.h>
 #include <RTClib.h>
@@ -94,7 +95,7 @@ int version = 162;
 #include "imagePump.h"
 #include "imageRunning.h"
 #include "imageEmpty.h" // APH 155 added
-// test#include "empty3.h"
+// test #include "empty3.h"
 #include "pitches.h" // APH 155 added
 
 // colors
@@ -134,13 +135,14 @@ RTC_DS1307 rtc;
 #define PUMP_OFF HIGH
 #else
 #define pinNewBuzzer 23
-#ifdef testing
+#ifdef Testing
 #define pinScreenButton 32
 #define pinSet 0
 #else
 #define pinScreenButton 25
 #define pinSet 32
 #endif
+
 #define pinPumpA 18
 #define pinPumpB 19
 #define pinB 17
@@ -151,6 +153,7 @@ RTC_DS1307 rtc;
 
 #define PUMP_ON HIGH
 #define PUMP_OFF LOW
+
 #endif
 
 #define MV_PER_AMP 185
@@ -264,7 +267,7 @@ char strMsg[300];
 //#define NOTE_B3 247
 //#define NOTE_B4 494
 
-boolean beeping = false, displaybeeping = false, extensionMode = true;  // 148
+boolean beeping = false, displaybeeping = false, extensionMode = false;  // 148 164 was true chamged for testing only
 unsigned long startMillis;
 
 int onTime, onCount, offCount, offTime, beepCount, beepFreq;
@@ -392,9 +395,9 @@ void setup() {
   //Serial.println(); Serial.print(APssid); Serial.println(" access point started");
 
   // APH added for Testing Only 154
-#ifdef testing
-  //WiFi.disconnect(false); // WiFi ON at boot-up
-  //WiFi.enableAP(true);
+#ifdef Testing
+  WiFi.disconnect(false); // WiFi ON at boot-up
+  WiFi.enableAP(true);
 #else
   WiFi.disconnect(true); // 152 WiFi OFF at boot-up
   WiFi.enableAP(false);
@@ -448,7 +451,7 @@ void setup() {
 
   Serial.print("started v"); Serial.println(version);
 
-#ifdef testing // APH added 157
+#ifdef Testing // APH added 157
   beep(1, 1, 9, 1000);
 #else
   playTune(); // David likes this and used normally
@@ -601,6 +604,7 @@ void loop() {
     sprintf(strMsg, "Time:%02d:%02d:%02d(%d), amps: %3.2f, A:%s, B:%s, tap:%d", hh, mm, ss, night, pumpAmps, pumpAState.c_str(), pumpBState.c_str(), tapOpen);
    // Serial.println(strMsg); // *********************************
 
+
     if (pumpARunning || pumpBRunning) {
       if (display != dispPumpRunning) showPumpScreen();
       else showAmps();
@@ -674,10 +678,11 @@ void loop() {
 
   if (sampleTick.check()) {
 
-      int pumpCountNow = analogRead(pinPumpCurrent) - noPumpCount; // 160
-      if (pumpCountNow < 0) pumpCountNow *= -1;
+    int pumpCountNow = analogRead(pinPumpCurrent) - noPumpCount; // 160
+    if (pumpCountNow < 0) pumpCountNow *= -1;
 
-      pumpSamples[sampleIndex] = pumpCountNow;
+    pumpSamples[sampleIndex] = pumpCountNow;
+
     sampleIndex += 1;
     if (sampleIndex >= MAX_SAMPLES) sampleIndex = 0;
 
@@ -703,7 +708,7 @@ void loop() {
       pumpAmps = pumpAAmps;
 #else
       //pumpAAmps = (noPumpVolts - pumpVolts) * 4.5;
-        pumpAAmps = pumpAmps;
+      pumpAAmps = pumpAmps;
 #endif
 
       if (!inTransition && (pumpAAmps < pumpAThreshold) && !manualControl && !pumpIsStarting && !pressurising) {
@@ -860,8 +865,10 @@ void loop() {
 
   if (longPress.check() && btnScreen.isPressed()) { // 152
     longPressCount += 1;
-    if (longPressCount == 3) beep(2, 1, 1, 0); // 153 was 1 beep
-    if (longPressCount == 5) beep(3, 1, 1, 0);
+
+    if (longPressCount == 3) beep(2, 1, 1, 1000);// beep(1, 1, 9, 1000); // 164 added testing only to beep amp
+    if (longPressCount == 5) beep(3, 1, 1, 1000); // 164 were 0 now 1000
+
   }
 }
 
@@ -869,7 +876,7 @@ String getTime() {
   char strTime[10];
   sprintf(strTime, "%02d:%02d", hh, mm);
   String str(strTime);
-  //Serial.println(str);
+  Serial.println(str); // APH enabled again for testing
   return str;
 }
 
@@ -930,6 +937,7 @@ void getEEData() {
   if (nightStartMM > 59) nightStartMM = 30;
 
   nightEndHH = (int)EEPROM.read(EE_NIGHT_END_HH);
+
   if (nightEndHH > 10) nightEndHH = 6; 
 
   nightEndMM = (int)EEPROM.read(EE_NIGHT_END_MM);
@@ -1010,8 +1018,17 @@ void showHome() { // ZZZ
     showCross(RED);
   }
   // APH 153 Added
-  gDisp.setFont(202);
-  // APH    gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
+  
   gDisp.setColor(TURQUOISE);
   if (APActive) {
     gDisp.setTextPosAbs(46, 78);
@@ -1034,7 +1051,16 @@ void showTime() {
   int ypos = 118, xpos = 13;
 
   gDisp.setColor(BLACK);
-  gDisp.setFont(202);
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
 
   if (sysMode == modeNormal) {
 
@@ -1095,7 +1121,16 @@ void showPumpScreen() { // This is when a Pump is running
   //  gDisp.drawBitmap(2, 32, 125, 64, RUNNING);
   gDisp.drawBitmap(0, 64, 125, 64, RUNNING);
 
-  gDisp.setFont(202);
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
 
   int xpos = 10, ypos = 110;
 
@@ -1111,7 +1146,7 @@ void showPumpScreen() { // This is when a Pump is running
   }
 }
 
-// APH Version 140
+// APH Version 163
 void showCross(uint8_t col) {
 
   gDisp.clearScreen();
@@ -1130,17 +1165,35 @@ void showCross(uint8_t col) {
     picPos = 30;
   }
 
+  gDisp.setColor(WHITE);
+  // APH 163 Added Outer Cross
+  // Top Left to Bottom Right Outer Cross
+  for (int i = 11; i < 14; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
+  for (int i = 11; i < 14; i++) gDisp.drawLine(0, i, 127 - i, height);
+  // Bottom Left to Top Right
+  for (int i = 11; i < 14; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
+  for (int i = 11; i < 14; i++) gDisp.drawLine(i, height, 127, i);
+
   gDisp.setColor(col);
   // Top Left to Bottom Right
-  for (int i = 0; i < 9; i++) gDisp.drawLine(i, 0, 127, height - i);
-  for (int i = 0; i < 9; i++) gDisp.drawLine(0, i, 127 - i, height);
+  for (int i = 0; i < 10; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
+  for (int i = 0; i < 10; i++) gDisp.drawLine(0, i, 127 - i, height);
 
   // Bottom Left to Top Right
-  for (int i = 0; i < 9; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
-  for (int i = 0; i < 9; i++) gDisp.drawLine(i, height, 127, i);
+  for (int i = 0; i < 10; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
+  for (int i = 0; i < 10; i++) gDisp.drawLine(i, height, 127, i);
 
-  gDisp.setColor(WHITE);
+//#define RED 0xe0
+//#define ORANGE 0xf0
+//#define GREEN 0x10
+//#define YELLOW 0xfc
+//#define WHITE 0xff
+//#define BLACK 0x00
+//#define BLUE 0x06
+//#define GREY 0x92
+//#define TURQUOISE 0x1f
 
+  gDisp.setColor(ORANGE);
   if (activePump == 'A') {
     gDisp.drawBitmap(0, picPos, 125, 64, REAR);
   }
@@ -1167,7 +1220,16 @@ void showAmps() {
   gDisp.drawBox(xpos, ypos - 30, 124 - xpos, 30);
 
   gDisp.setTextPosAbs(xpos, ypos);
-  gDisp.setFont(202);
+   // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
   gDisp.setColor(TURQUOISE);
 
   if (pumpARunning) sprintf(strMsg, "AMPS = %3.2f", pumpAAmps);
@@ -1273,12 +1335,12 @@ void buttonProcessor() {
     if (sysMode == modeNormal) {
       if (pumpARunning || pumpBRunning) {
         if (pumpARunning) {
-          pumpAThreshold = pumpAAmps / 2; // 123
+          pumpAThreshold = pumpAAmps / 1.25; // V163 WAS 2; // 123
           if (pumpAThreshold < 0.2) pumpAThreshold = defaultThreshold; // APH157 Changed was 0.2;
           sprintf(strMsg, "Pump A threshold set to %3.2f", pumpAThreshold);
         }
         else if (pumpBRunning) {
-          pumpBThreshold = pumpBAmps / 2; // 123
+          pumpBThreshold = pumpBAmps / 1.25; // V163 WAS 2; // 123
           if (pumpBThreshold < 0.2) pumpBThreshold = 0.2;
           sprintf(strMsg, "Pump B threshold set to %3.2f", pumpBThreshold);
         }
@@ -1290,7 +1352,16 @@ void buttonProcessor() {
 
         gDisp.clearScreen();
 
-        gDisp.setFont(202);
+   // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
         gDisp.setTextPosAbs(25, 50);
         gDisp.setColor(RED);
         gDisp.print("SET TIME");
@@ -1314,7 +1385,16 @@ void buttonProcessor() {
           sysMode = modeSetNightStart;
 
           gDisp.clearScreen();
-          gDisp.setFont(202);
+   // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
           gDisp.setTextPosAbs(2, 50);
           gDisp.setColor(RED);
           gDisp.print("NIGHT START");
@@ -1334,8 +1414,17 @@ void buttonProcessor() {
           sysMode = modeSetNightEnd;
 
           gDisp.clearScreen();
-          gDisp.setFont(202);
-          gDisp.setTextPosAbs(20, 50);
+  // APH165 Added Changed
+  if (extensionMode) {
+     gDisp.setFont(202);
+ }
+  else {
+   gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  }
+  // gDisp.setFont(202);
+  // gDisp.setFont(fonts[3]); // 0, 1, 2, 3,
+  // APH165 Changed
+         gDisp.setTextPosAbs(20, 50);
           gDisp.setColor(RED);
           gDisp.print("NIGHT END");
 
