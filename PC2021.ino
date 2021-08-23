@@ -72,7 +72,7 @@
 int version = 164;
 
 //#define david // APH 154 added this feature from Energy Miser
-//#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension box
+//#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension bo>>>>>>> master
 
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
@@ -602,7 +602,8 @@ void loop() {
     //sprintf(strMsg, "%s => volts now = %3.2f, amps = %3.2f, A %s, B %s", strTime, pumpVolts, pumpAmps, pumpAState.c_str(), pumpBState.c_str());
     //sprintf(strMsg, "%s => no pump volts = %3.2f, volts now = %3.2f, amps = %3.2f, A %s, B %s", strTime, noPumpVolts, pumpVolts, pumpAmps, pumpAState.c_str(), pumpBState.c_str());
     sprintf(strMsg, "Time:%02d:%02d:%02d(%d), amps: %3.2f, A:%s, B:%s, tap:%d", hh, mm, ss, night, pumpAmps, pumpAState.c_str(), pumpBState.c_str(), tapOpen);
-    // Serial.println(strMsg); // *********************************
+   // Serial.println(strMsg); // *********************************
+
 
     if (pumpARunning || pumpBRunning) {
       if (display != dispPumpRunning) showPumpScreen();
@@ -681,6 +682,7 @@ void loop() {
     if (pumpCountNow < 0) pumpCountNow *= -1;
 
     pumpSamples[sampleIndex] = pumpCountNow;
+
     sampleIndex += 1;
     if (sampleIndex >= MAX_SAMPLES) sampleIndex = 0;
 
@@ -863,8 +865,10 @@ void loop() {
 
   if (longPress.check() && btnScreen.isPressed()) { // 152
     longPressCount += 1;
+
     if (longPressCount == 3) beep(2, 1, 1, 1000);// beep(1, 1, 9, 1000); // 164 added testing only to beep amp
     if (longPressCount == 5) beep(3, 1, 1, 1000); // 164 were 0 now 1000
+
   }
 }
 
@@ -933,7 +937,8 @@ void getEEData() {
   if (nightStartMM > 59) nightStartMM = 30;
 
   nightEndHH = (int)EEPROM.read(EE_NIGHT_END_HH);
-  if (nightEndHH > 10) nightEndHH = 6;
+
+  if (nightEndHH > 10) nightEndHH = 6; 
 
   nightEndMM = (int)EEPROM.read(EE_NIGHT_END_MM);
   if (nightEndMM > 59) nightEndMM = 30;
