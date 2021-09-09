@@ -68,8 +68,17 @@
   164 - APH added amp/speaker beep to long press. Improved showcross display colours
         Added code the set RTC. For testing change extensionMode to false.
   165 - APH Change font when extension not being used to 
+<<<<<<< Updated upstream
 */
 int version = 164;
+=======
+  166 - bug with screen button
+  167 - show time on mormal display
+  168 - bigger time
+  169 - APH Changeed Red Cross slightly, font for extension changed from 203 to 202 
+*/
+int version = 169;
+>>>>>>> Stashed changes
 
 //#define david // APH 154 added this feature from Energy Miser
 //#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension bo>>>>>>> master
@@ -78,6 +87,11 @@ int version = 164;
 #define useWebServer // These are for normal use
 //#define USE_BUTTONS_FOR_PS_AND_PUMP // These are for testing using PCB buttons
 //#define useWifi // Dont use this, its for David
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes
 #include <WiFi.h>
 #include <Wire.h>
 #include <RTClib.h>
@@ -296,7 +310,7 @@ byte display = 0;
 #define dispPumpRunning 1
 
 boolean setHours, setMins, nightStartInhibit = true;
-#define NIGHT_INHIBIT_MINS 10 // APH 140 use 1 for testing
+#define NIGHT_INHIBIT_MINS 5 // 169 was 10 // APH 140 use 1 for testing
 int minsON = 0;
 
 // 143
@@ -1044,6 +1058,7 @@ void showHome() { // ZZZ
 
 void showTime() {
 
+<<<<<<< Updated upstream
   if (extensionMode) {
     return;  // APH 145 ZZZ
   }
@@ -1072,6 +1087,47 @@ void showTime() {
     gDisp.setTextPosAbs(xpos, ypos);
     gDisp.print(strTime);
 
+=======
+  if (extensionMode || tapOpen || pumpARunning || pumpBRunning) { // 167
+    return;  // APH 145
+  }
+
+//   dontShowTime = true;
+//   return;  // APH 169 TESTING ONLY WHILE WAITING TO LOAD LARGER FONTSß
+
+  int ypos = 100, xpos = 13;
+
+  if (sysMode == modeNormal) { // 167
+      gDisp.setBgColor(BLACK);
+      gDisp.setColor(YELLOW);
+//      gDisp.setFont(203);
+     gDisp.setFont(202); // V169
+
+      if (ss == 0 || firsttime) {
+          gDisp.setTextPosAbs(0, ypos);
+          //gDisp.print(strTime);
+          sprintf(strMsg, "%02d:%02d", hh, mm);
+          gDisp.print(strMsg);
+
+          if (APActive) {
+              gDisp.setFont(202);
+              gDisp.setColor(TURQUOISE);
+              gDisp.setTextPosAbs(46, 78);
+              gDisp.print("WIFI"); // XXX
+          }
+          else {
+              gDisp.setTextPosAbs(46, 78);
+              gDisp.print("");
+          }
+      }
+      //else {
+      //    xpos += 70;
+      //    gDisp.setTextPosAbs(xpos, ypos);
+      //    sprintf(strMsg, "%02d", ss);
+      //    gDisp.print(strMsg);
+      //}
+
+>>>>>>> Stashed changes
   }
   else {
     xpos += 5;
@@ -1165,23 +1221,22 @@ void showCross(uint8_t col) {
     picPos = 30;
   }
 
-  gDisp.setColor(WHITE);
+ gDisp.setColor(WHITE);
   // APH 163 Added Outer Cross
-  // Top Left to Bottom Right Outer Cross
-  for (int i = 11; i < 14; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
-  for (int i = 11; i < 14; i++) gDisp.drawLine(0, i, 127 - i, height);
+  for (int i = 10; i < 12; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 169 all were 9
+  for (int i = 10; i < 12; i++) gDisp.drawLine(0, i, 127 - i, height);
   // Bottom Left to Top Right
-  for (int i = 11; i < 14; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
-  for (int i = 11; i < 14; i++) gDisp.drawLine(i, height, 127, i);
+  for (int i = 10; i < 12; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
+  for (int i = 10; i < 12; i++) gDisp.drawLine(i, height, 127, i);
 
   gDisp.setColor(col);
-  // Top Left to Bottom Right
-  for (int i = 0; i < 10; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 163 all were 9
-  for (int i = 0; i < 10; i++) gDisp.drawLine(0, i, 127 - i, height);
+  // Top Left to Bottom Right V164 9's below were 10
+  for (int i = 0; i < 9; i++) gDisp.drawLine(i, 0, 127, height - i); // APH 169 all were 9
+  for (int i = 0; i < 9; i++) gDisp.drawLine(0, i, 127 - i, height);
 
   // Bottom Left to Top Right
-  for (int i = 0; i < 10; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
-  for (int i = 0; i < 10; i++) gDisp.drawLine(i, height, 127, i);
+  for (int i = 0; i < 9; i++) gDisp.drawLine(0, height - i, 127 - i, 0);
+  for (int i = 0; i < 9; i++) gDisp.drawLine(i, height, 127, i);
 
 //#define RED 0xe0
 //#define ORANGE 0xf0
@@ -1193,12 +1248,12 @@ void showCross(uint8_t col) {
 //#define GREY 0x92
 //#define TURQUOISE 0x1f
 
-  gDisp.setColor(ORANGE);
+  gDisp.setColor(WHITE);
   if (activePump == 'A') {
-    gDisp.drawBitmap(0, picPos, 125, 64, REAR);
+    gDisp.drawBitmap(0, picPos, 125, 64, FRONT);
   }
   else {
-    gDisp.drawBitmap(0, picPos, 125, 64, FRONT);
+    gDisp.drawBitmap(0, picPos, 125, 64, REAR);
   }
   // APH 155 added
   gDisp.drawBitmap(0, 64, 125, 64, EMPTY); // APH 157
