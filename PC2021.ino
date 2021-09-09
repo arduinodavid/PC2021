@@ -6,7 +6,7 @@
 #define Ver 41 // for the digole!!!!
 #define _Digole_Serial_I2C_ // for the graphics
 
-// APH Beep(3,1,9,1000) means beep 3 times for 0.1 sec with an interval of 0.9secs between at a frequency of 1Kz
+// APH Beep(3,1,9,1000) means beep 3 times for 0.1 sec with an interval of 0.9secs between at a frequency of 1Kz last value (1000) sounds the amp/speaker
 
 /*151
   109 - pump on start
@@ -1423,7 +1423,6 @@ void buttonProcessor() {
 
         setHours = true;
         setMins = false;
-
         showTime();
       }
     }
@@ -1453,7 +1452,6 @@ void buttonProcessor() {
           gDisp.setTextPosAbs(2, 50);
           gDisp.setColor(RED);
           gDisp.print("NIGHT START");
-
           showTime();
         }
       }
@@ -1482,7 +1480,6 @@ void buttonProcessor() {
          gDisp.setTextPosAbs(20, 50);
           gDisp.setColor(RED);
           gDisp.print("NIGHT END");
-
           showTime();
         }
       }
