@@ -73,8 +73,9 @@
   168 - bigger time
   169 - APH Changeed Red Cross slightly, font for extension changed from 203 to 202
   170 - APH added small font option for smaller LCD
+  171 - APH reverted threshold calibration code back to Pumo2020 version
 */
-int version = 170;
+int version = 171;
 
 //#define david // APH 154 added this feature from Energy Miser
 //#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension bo>>>>>>> master
@@ -693,6 +694,8 @@ void loop() {
     }
   }
 
+  // APH V171 Reverted back to Pump 2020 below
+  //*
   if (sampleTick.check()) {
 
     int pumpCountNow = analogRead(pinPumpCurrent) - noPumpCount; // 160
@@ -707,8 +710,13 @@ void loop() {
 
     for (int i = 0; i < MAX_SAMPLES; i++) aggregate += pumpSamples[i];
 
+    sprintf(strMsg, "Pump noPumpCount = %3.2f", noPumpCount); Serial.println(strMsg); // APH V171 Added
+
     pumpVolts = (double)aggregate * 2.50 / (double) noPumpCount / MAX_SAMPLES;
     //pumpVolts = (double)aggregate * 2.35 / 697 / MAX_SAMPLES; // ***************************
+
+    sprintf(strMsg, "Pump pumpVolts = %3.2f", pumpVolts); Serial.println(strMsg); // APH V171 Added
+
 
     // 160
     //if (!pumpARunning && !pumpBRunning && pumpVolts > 0.1) noPumpVolts = pumpVolts;
@@ -716,8 +724,34 @@ void loop() {
 
     //pumpAmps = (noPumpVolts - pumpVolts) * 4.5;
     pumpAmps = pumpVolts * 1000 / MV_PER_AMP; // 160
+    //*/
+    //  sprintf(strMsg, "Pump Load = %3.2fA", pumpAmps); Serial.println(strMsg);
+    // APH V171 Reverted back to Pump 2020 below
+    // APH V171
+    /*
+      if (sampleTick.check()) {
+
+        pumpSamples[sampleIndex] = analogRead(pinPumpCurrent);
+        sampleIndex += 1;
+        if (sampleIndex >= MAX_SAMPLES) sampleIndex = 0;
+
+        int aggregate = 0;
+
+        for (int i = 0; i < MAX_SAMPLES; i++) aggregate += pumpSamples[i];
+
+        pumpVolts = (double)aggregate * 4.74 / 701 / MAX_SAMPLES;
+        //pumpVolts = (double)aggregate * 2.35 / 697 / MAX_SAMPLES; // ***************************
+
+        if (!pumpARunning && !pumpBRunning && pumpVolts > 0.1) noPumpVolts = pumpVolts;
+        else noPumpVolts = 2.35;
+
+        pumpAmps = (noPumpVolts - pumpVolts) * 4.5;
+    */
+    // APH V171
 
     if (pumpARunning) {
+
+      sprintf(strMsg, "Pump A Load = %3.2fA", pumpAmps); Serial.println(strMsg); // APH V171 Added
 
 #ifdef USE_BUTTONS_FOR_PS_AND_PUMP
       if (outOfWater) pumpAAmps = 0;
@@ -755,6 +789,8 @@ void loop() {
     else pumpAAmps = 0;
 
     if (pumpBRunning) {
+
+      sprintf(strMsg, "Pump B Load = %3.2fA", pumpAmps); Serial.println(strMsg); // APH V171 Added
 
 #ifdef USE_BUTTONS_FOR_PS_AND_PUMP
       if (outOfWater) pumpBAmps = 0;
@@ -1221,11 +1257,11 @@ void showCross(uint8_t col) {
 
 void showAmps() {
 
-// APH 170 dont display amps when small font
+  // APH 170 dont display amps when small font
 #ifdef smallFont
   return;
 #endif
-// APH 170
+  // APH 170
 
 
   if (extensionMode) {
