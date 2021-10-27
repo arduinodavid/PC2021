@@ -74,8 +74,10 @@
   169 - APH Changeed Red Cross slightly, font for extension changed from 203 to 202
   170 - APH added small font option for smaller LCD
   171 - APH reverted threshold calibration code back to Pumo2020 version
+  172 - introduces all empty state
+
 */
-int version = 171;
+int version = 172;
 
 //#define david // APH 154 added this feature from Energy Miser
 //#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension bo>>>>>>> master
@@ -83,7 +85,7 @@ int version = 171;
 #define useRTC // These are for normal use
 #define useWebServer // These are for normal use
 //#define USE_BUTTONS_FOR_PS_AND_PUMP // These are for testing using PCB buttons
-//#define useWifi // Dont use this, its for David
+#define useWifi // Dont use this, its for David
 #define smallFont // Display font on extension 170
 
 #include <WiFi.h>
@@ -324,6 +326,8 @@ boolean outOfWater = false;
 boolean ignoreFirstRelease = true;
 // 150
 int swapNo = 0;
+
+boolean allEmpty = false;
 
 boolean dontShowTime = false;
 
@@ -877,6 +881,8 @@ void loop() {
           Serial.println("All off - no water (A was running)");
           //??    beep(4, 2, 8, 500); // APH beep was beep(3, 1, 9, 1000)
           showHome();
+
+          allEmpty = true; // 172
         }
       }
       else if (pumpBRunning) {
@@ -887,6 +893,8 @@ void loop() {
           Serial.println("All off - no water (B was running)");
           //??    beep(4, 2, 8, 500); // APH beep was beep(3, 1, 9, 1000)
           showHome();
+
+          allEmpty = true; // 172
         }
       }
     }
@@ -1316,6 +1324,19 @@ void buttonProcessor() {
       if (refillPending) {
         refillPending = false;
         Serial.println("refill cleared");
+
+        if (allEmpty) { // 172 start again with A
+            allEmpty = false;
+
+            digitalWrite(pinPumpA, PUMP_ON); // start A
+            pumpARunning = true;
+            pumpAState = "ON";
+            Serial.println("Started pump A after all empty");
+
+            activePump = 'A';
+            EEPROM.write(EE_ACTIVE_PUMP, activePump);
+            EEPROM.commit();
+        }
       }
     }
     else if (millis() - startMillis >= 3000 && millis() - startMillis < 5000) { // wifi 152
