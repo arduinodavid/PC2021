@@ -75,9 +75,9 @@
   170 - APH added small font option for smaller LCD
   171 - APH reverted threshold calibration code back to Pumo2020 version
   172 - introduces all empty state
-
+  173 APH - adjusted threshold calibration formula
 */
-int version = 172;
+int version = 173;
 
 //#define david // APH 154 added this feature from Energy Miser
 //#define Testing // APH 155 The is used to boot with WiFi on for testing wothout extension bo>>>>>>> master
@@ -882,7 +882,7 @@ void loop() {
           //??    beep(4, 2, 8, 500); // APH beep was beep(3, 1, 9, 1000)
           showHome();
 
-          allEmpty = true; // 172
+           allEmpty = true; // 172
         }
       }
       else if (pumpBRunning) {
@@ -1008,6 +1008,7 @@ void getEEData() {
   activePump = (char)EEPROM.read(EE_ACTIVE_PUMP);
   sprintf(strMsg, "Active PUMP %c", activePump); Serial.println(strMsg);
 
+// APK Looking here
   if ((activePump != 'A') && (activePump != 'B')) {
     activePump = 'A';
     EEPROM.write(EE_ACTIVE_PUMP, 'A');
@@ -1065,7 +1066,7 @@ void showHome() { // ZZZ
   display = dispHome;
 
   gDisp.clearScreen();
-  // APH gDisp.setColor(RED); gDisp.drawFrame(0, 0, 127, 127);
+ // gDisp.setColor(RED); gDisp.drawFrame(0, 0, 159, 127); // V173 testing only
 
   if (!refillPending) {
     gDisp.setColor(WHITE);
@@ -1389,9 +1390,7 @@ void buttonProcessor() {
     outOfWater = false;
     Serial.println("amps = 5");
   }
-
 #else
-
   btnSet.read();
   btnA.read();
   btnB.read();
@@ -1407,7 +1406,7 @@ void buttonProcessor() {
           sprintf(strMsg, "Pump A threshold set to %3.2f", pumpAThreshold);
         }
         else if (pumpBRunning) {
-          pumpBThreshold = pumpBAmps / 1.25; // V163 WAS 2; // 123
+          pumpBThreshold = pumpBAmps / 1.10; // V173 was 1.25 for some reason they now need to be diferent // V163 WAS 2; // 123
           if (pumpBThreshold < 0.2) pumpBThreshold = 0.2;
           sprintf(strMsg, "Pump B threshold set to %3.2f", pumpBThreshold);
         }
